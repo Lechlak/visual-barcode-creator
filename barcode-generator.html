@@ -5,133 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Visual Barcode Creator</title>
   <style>
-    :root { color-scheme: light dark; }
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: #f5f7fb;
-      color: #1a1a1a;
-      padding: 20px;
-    }
-
-    .card {
-      width: min(860px, 96vw);
-      background: #ffffff;
-      border-radius: 14px;
-      padding: 24px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-    }
-
-    h1 { margin: 0 0 8px; font-size: 1.45rem; }
-
-    p { margin: 0 0 18px; color: #4a4a4a; }
-
-    textarea {
-      width: 100%;
-      min-height: 110px;
-      padding: 11px 12px;
-      border-radius: 10px;
-      border: 1px solid #b7bfd1;
-      font-size: 1rem;
-      resize: vertical;
-      box-sizing: border-box;
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    button {
-      padding: 11px 16px;
-      border: none;
-      border-radius: 10px;
-      background: #0066ff;
-      color: #fff;
-      font-size: 0.96rem;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    button.secondary { background: #5c657a; }
-    button:hover { filter: brightness(0.95); }
-
-    .error { margin-top: 10px; color: #b00020; min-height: 1.2em; }
-
-    .history {
-      margin-top: 18px;
-      border-top: 1px solid #e0e5f0;
-      padding-top: 12px;
-    }
-
-    .history h2 { margin: 0 0 8px; font-size: 1rem; }
-
-    #historyList {
-      margin: 0;
-      padding-left: 18px;
-      max-height: 160px;
-      overflow: auto;
-      color: #333;
-      font-size: 0.93rem;
-    }
-
-    .barcode-wrap {
-      margin-top: 18px;
-      padding: 16px;
-      border: 1px dashed #c9cfe0;
-      border-radius: 12px;
-      background: #fff;
-      overflow-x: auto;
-    }
-
-    .barcode-item {
-      margin-bottom: 20px;
-      text-align: center;
-      page-break-inside: avoid;
-    }
-
-    .barcode-item:last-child { margin-bottom: 0; }
-
-    .barcode-value {
-      margin-top: 8px;
-      font-size: 0.9rem;
-      color: #222;
-      word-break: break-word;
-    }
-
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #1a1a1a; padding: 20px; }
+    .card { width: min(960px, 96vw); margin: 0 auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 25px rgba(0,0,0,.08); }
+    h1 { margin: 0 0 8px; }
+    p { margin: 0 0 16px; color: #4a4a4a; }
+    input { width: 100%; padding: 10px; border: 1px solid #b7bfd1; border-radius: 10px; box-sizing: border-box; }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+    button { padding: 10px 14px; border:0; border-radius:10px; cursor:pointer; font-weight:600; background:#0066ff; color:#fff; }
+    button.secondary { background:#5c657a; }
+    .error { min-height: 1.2em; margin-top: 10px; color:#b00020; }
+    .patron { margin-top: 18px; padding-top: 16px; border-top: 2px solid #d8deee; }
+    .patron h3 { margin: 0 0 8px; }
+    .barcode-item { text-align:center; margin-bottom: 16px; page-break-inside: avoid; }
+    .barcode-value { margin-top:6px; font-size:.9rem; }
+    hr.patron-separator { border: none; border-top: 2px dashed #aab4cc; margin: 20px 0 0; }
+    .history { margin-top: 18px; border-top: 1px solid #e0e5f0; padding-top: 12px; }
+    #historyList { margin:0; padding-left:18px; max-height:150px; overflow:auto; }
     @media print {
-      body { background: #fff; padding: 0; }
-      .card { box-shadow: none; width: 100%; padding: 0; }
-      .no-print { display: none !important; }
-      .barcode-wrap { border: none; padding: 0; }
+      .no-print { display:none !important; }
+      .card { box-shadow:none; }
     }
   </style>
 </head>
 <body>
   <main class="card">
     <h1>Visual Barcode Creator</h1>
-    <p>Enter one numeric value per line. Use <strong>Add Line Break</strong> to create another barcode row.</p>
+    <p>Use <strong>Add Patron</strong>, then scan/enter barcode and click <strong>Add Barcode</strong>. Each patron is segmented with a divider.</p>
 
     <div class="no-print">
-      <textarea id="barcodeInput" placeholder="Example:\n1234567890\n9876543210" aria-label="Numbers for barcode"></textarea>
-
+      <input id="barcodeInput" type="text" inputmode="numeric" placeholder="Scan or enter barcode number" aria-label="Barcode value" />
       <div class="controls">
-        <button id="lineBreakBtn" type="button" class="secondary">Add Line Break</button>
-        <button id="generateBtn" type="button">Generate Barcode(s)</button>
+        <button id="addPatronBtn" type="button" class="secondary">Add Patron</button>
+        <button id="addBarcodeBtn" type="button">Add Barcode</button>
         <button id="exportWordBtn" type="button" class="secondary">Export Word (.doc)</button>
         <button id="printBtn" type="button" class="secondary">Print / Save PDF</button>
         <button id="clearCacheBtn" type="button" class="secondary">Clear Cache</button>
       </div>
-
       <div id="error" class="error" role="alert" aria-live="polite"></div>
     </div>
 
-    <div class="barcode-wrap" id="barcodeWrap" aria-label="Generated barcodes"></div>
+    <section id="patronsWrap" aria-label="Generated patron barcodes"></section>
 
     <section class="history no-print" aria-label="Generation history">
       <h2>Running Log (saved in cache)</h2>
@@ -141,170 +54,165 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script>
-    const input = document.getElementById('barcodeInput');
-    const lineBreakBtn = document.getElementById('lineBreakBtn');
-    const generateBtn = document.getElementById('generateBtn');
+    const barcodeInput = document.getElementById('barcodeInput');
+    const addPatronBtn = document.getElementById('addPatronBtn');
+    const addBarcodeBtn = document.getElementById('addBarcodeBtn');
     const exportWordBtn = document.getElementById('exportWordBtn');
     const printBtn = document.getElementById('printBtn');
     const clearCacheBtn = document.getElementById('clearCacheBtn');
-    const barcodeWrap = document.getElementById('barcodeWrap');
+    const patronsWrap = document.getElementById('patronsWrap');
     const error = document.getElementById('error');
     const historyList = document.getElementById('historyList');
 
     const STORAGE_KEYS = {
-      input: 'barcode_creator_input',
-      history: 'barcode_creator_history',
-      barcodes: 'barcode_creator_barcodes'
+      patrons: 'barcode_creator_patrons',
+      history: 'barcode_creator_history'
     };
 
-
-    function loadCache() {
-      const cachedInput = localStorage.getItem(STORAGE_KEYS.input);
-      if (cachedInput) input.value = cachedInput;
-
-      const cachedHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-      renderHistory(cachedHistory);
+    function getPatrons() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.patrons) || '[]');
     }
 
-    function saveInput() {
-      localStorage.setItem(STORAGE_KEYS.input, input.value);
+    function savePatrons(patrons) {
+      localStorage.setItem(STORAGE_KEYS.patrons, JSON.stringify(patrons));
     }
 
-    function addHistory(values) {
+    function renderPatrons(patrons) {
+      patronsWrap.innerHTML = '';
+      patrons.forEach((patron, index) => {
+        const section = document.createElement('section');
+        section.className = 'patron';
+
+        const title = document.createElement('h3');
+        title.textContent = `Patron ${index + 1}`;
+        section.appendChild(title);
+
+        patron.barcodes.forEach((value) => {
+          const item = document.createElement('div');
+          item.className = 'barcode-item';
+
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          JsBarcode(svg, value, { format: 'CODE128', lineColor: '#000', width: 2, height: 90, margin: 12, displayValue: false });
+
+          const text = document.createElement('div');
+          text.className = 'barcode-value';
+          text.textContent = value;
+
+          item.appendChild(svg);
+          item.appendChild(text);
+          section.appendChild(item);
+        });
+
+        patronsWrap.appendChild(section);
+
+        if (index < patrons.length - 1) {
+          const hr = document.createElement('hr');
+          hr.className = 'patron-separator';
+          patronsWrap.appendChild(hr);
+        }
+      });
+    }
+
+    function addHistory(message) {
       const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-      const entry = {
-        generatedAt: new Date().toISOString(),
-        values
-      };
-      history.unshift(entry);
-      const trimmed = history.slice(0, 30);
+      history.unshift(`${new Date().toLocaleString()}: ${message}`);
+      const trimmed = history.slice(0, 40);
       localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(trimmed));
-      renderHistory(trimmed);
-    }
-
-    function renderHistory(history) {
       historyList.innerHTML = '';
-      history.forEach((item) => {
+      trimmed.forEach((line) => {
         const li = document.createElement('li');
-        const time = new Date(item.generatedAt).toLocaleString();
-        li.textContent = `${time}: ${item.values.join(', ')}`;
+        li.textContent = line;
         historyList.appendChild(li);
       });
     }
 
-
-    function loadCachedBarcodes() {
-      const cachedValues = JSON.parse(localStorage.getItem(STORAGE_KEYS.barcodes) || '[]');
-      if (cachedValues.length) renderBarcodeList(cachedValues);
-    }
-
-    function saveBarcodes(values) {
-      localStorage.setItem(STORAGE_KEYS.barcodes, JSON.stringify(values));
-    }
-
-    function renderBarcodeList(values) {
-      barcodeWrap.innerHTML = '';
-      values.forEach((value) => {
-        const item = document.createElement('div');
-        item.className = 'barcode-item';
-
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        JsBarcode(svg, value, {
-          format: 'CODE128',
-          lineColor: '#000000',
-          width: 2,
-          height: 90,
-          margin: 12,
-          displayValue: false
-        });
-
-        const text = document.createElement('div');
-        text.className = 'barcode-value';
-        text.textContent = value;
-
-        item.appendChild(svg);
-        item.appendChild(text);
-        barcodeWrap.appendChild(item);
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
+      historyList.innerHTML = '';
+      history.forEach((line) => {
+        const li = document.createElement('li');
+        li.textContent = line;
+        historyList.appendChild(li);
       });
     }
 
-    function getValues() {
-      return input.value
-        .split('\n')
-        .map((v) => v.trim())
-        .filter(Boolean);
+    function ensureAtLeastOnePatron() {
+      const patrons = getPatrons();
+      if (!patrons.length) {
+        patrons.push({ barcodes: [] });
+        savePatrons(patrons);
+      }
+      return patrons;
     }
 
-    function renderBarcodes() {
-      const values = getValues();
-      saveInput();
+    function addPatron() {
+      const patrons = getPatrons();
+      patrons.push({ barcodes: [] });
+      savePatrons(patrons);
+      renderPatrons(patrons);
+      addHistory(`Added Patron ${patrons.length}`);
+      error.textContent = '';
+      barcodeInput.focus();
+    }
 
-      if (!values.length) {
-        error.textContent = 'Please enter at least one numeric value.';
+    function addBarcode() {
+      const value = barcodeInput.value.trim();
+      if (!/^\d+$/.test(value)) {
+        error.textContent = 'Enter numbers only (0-9).';
         return;
       }
 
-      const invalid = values.find((value) => !/^\d+$/.test(value));
-      if (invalid) {
-        error.textContent = `Invalid line: "${invalid}". Please use numbers only (0-9).`;
-        return;
-      }
+      const patrons = ensureAtLeastOnePatron();
+      const currentPatron = patrons[patrons.length - 1];
+      currentPatron.barcodes.push(value);
+      savePatrons(patrons);
+      renderPatrons(patrons);
+      addHistory(`Added barcode ${value} to Patron ${patrons.length}`);
 
       error.textContent = '';
-      const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.barcodes) || '[]');
-      const allValues = existing.concat(values);
-      saveBarcodes(allValues);
-      renderBarcodeList(allValues);
-      addHistory(values);
-
-      if (!input.value.endsWith('\n')) input.value += '\n';
-      input.focus();
-      input.selectionStart = input.selectionEnd = input.value.length;
-      saveInput();
+      barcodeInput.value = '';
+      barcodeInput.focus();
     }
 
     function exportToWord() {
-      if (!barcodeWrap.children.length) {
-        error.textContent = 'Generate at least one barcode before exporting.';
+      if (!patronsWrap.children.length) {
+        error.textContent = 'Add at least one barcode before exporting.';
         return;
       }
-
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${barcodeWrap.innerHTML}</body></html>`;
+      const html = `<!doctype html><html><head><meta charset="UTF-8"></head><body>${patronsWrap.innerHTML}</body></html>`;
       const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'barcodes.doc';
-      link.click();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'patron-barcodes.doc';
+      a.click();
       URL.revokeObjectURL(url);
     }
 
-    lineBreakBtn.addEventListener('click', () => {
-      const start = input.selectionStart;
-      const end = input.selectionEnd;
-      const text = input.value;
-      input.value = text.slice(0, start) + '\n' + text.slice(end);
-      input.focus();
-      input.selectionStart = input.selectionEnd = start + 1;
-    });
-
-    generateBtn.addEventListener('click', renderBarcodes);
+    addPatronBtn.addEventListener('click', addPatron);
+    addBarcodeBtn.addEventListener('click', addBarcode);
     exportWordBtn.addEventListener('click', exportToWord);
-    input.addEventListener('input', saveInput);
     printBtn.addEventListener('click', () => window.print());
     clearCacheBtn.addEventListener('click', () => {
-      localStorage.removeItem(STORAGE_KEYS.input);
+      localStorage.removeItem(STORAGE_KEYS.patrons);
       localStorage.removeItem(STORAGE_KEYS.history);
-      localStorage.removeItem(STORAGE_KEYS.barcodes);
-      input.value = '';
-      barcodeWrap.innerHTML = '';
+      patronsWrap.innerHTML = '';
       historyList.innerHTML = '';
       error.textContent = 'Cache cleared.';
-      input.focus();
+      barcodeInput.value = '';
+      barcodeInput.focus();
     });
 
-    loadCache();
-    loadCachedBarcodes();
+    barcodeInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addBarcode();
+      }
+    });
+
+    const patrons = ensureAtLeastOnePatron();
+    renderPatrons(patrons);
+    loadHistory();
   </script>
 </body>
 </html>
