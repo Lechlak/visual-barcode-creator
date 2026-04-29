@@ -125,6 +125,7 @@
         <button id="generateBtn" type="button">Generate Barcode(s)</button>
         <button id="exportWordBtn" type="button" class="secondary">Export Word (.doc)</button>
         <button id="printBtn" type="button" class="secondary">Print / Save PDF</button>
+        <button id="clearCacheBtn" type="button" class="secondary">Clear Cache</button>
       </div>
 
       <div id="error" class="error" role="alert" aria-live="polite"></div>
@@ -145,13 +146,15 @@
     const generateBtn = document.getElementById('generateBtn');
     const exportWordBtn = document.getElementById('exportWordBtn');
     const printBtn = document.getElementById('printBtn');
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
     const barcodeWrap = document.getElementById('barcodeWrap');
     const error = document.getElementById('error');
     const historyList = document.getElementById('historyList');
 
     const STORAGE_KEYS = {
       input: 'barcode_creator_input',
-      history: 'barcode_creator_history'
+      history: 'barcode_creator_history',
+      barcodes: 'barcode_creator_barcodes'
     };
 
 
@@ -189,33 +192,18 @@
       });
     }
 
-    function getValues() {
-      return input.value
-        .split('\n')
-        .map((v) => v.trim())
-        .filter(Boolean);
+
+    function loadCachedBarcodes() {
+      const cachedValues = JSON.parse(localStorage.getItem(STORAGE_KEYS.barcodes) || '[]');
+      if (cachedValues.length) renderBarcodeList(cachedValues);
     }
 
-    function renderBarcodes() {
-      const values = getValues();
-      saveInput();
+    function saveBarcodes(values) {
+      localStorage.setItem(STORAGE_KEYS.barcodes, JSON.stringify(values));
+    }
 
-      if (!values.length) {
-        error.textContent = 'Please enter at least one numeric value.';
-        barcodeWrap.innerHTML = '';
-        return;
-      }
-
-      const invalid = values.find((value) => !/^\d+$/.test(value));
-      if (invalid) {
-        error.textContent = `Invalid line: "${invalid}". Please use numbers only (0-9).`;
-        barcodeWrap.innerHTML = '';
-        return;
-      }
-
-      error.textContent = '';
+    function renderBarcodeList(values) {
       barcodeWrap.innerHTML = '';
-
       values.forEach((value) => {
         const item = document.createElement('div');
         item.className = 'barcode-item';
@@ -238,8 +226,41 @@
         item.appendChild(text);
         barcodeWrap.appendChild(item);
       });
+    }
 
+    function getValues() {
+      return input.value
+        .split('\n')
+        .map((v) => v.trim())
+        .filter(Boolean);
+    }
+
+    function renderBarcodes() {
+      const values = getValues();
+      saveInput();
+
+      if (!values.length) {
+        error.textContent = 'Please enter at least one numeric value.';
+        return;
+      }
+
+      const invalid = values.find((value) => !/^\d+$/.test(value));
+      if (invalid) {
+        error.textContent = `Invalid line: "${invalid}". Please use numbers only (0-9).`;
+        return;
+      }
+
+      error.textContent = '';
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.barcodes) || '[]');
+      const allValues = existing.concat(values);
+      saveBarcodes(allValues);
+      renderBarcodeList(allValues);
       addHistory(values);
+
+      if (!input.value.endsWith('\n')) input.value += '\n';
+      input.focus();
+      input.selectionStart = input.selectionEnd = input.value.length;
+      saveInput();
     }
 
     function exportToWord() {
@@ -271,8 +292,19 @@
     exportWordBtn.addEventListener('click', exportToWord);
     input.addEventListener('input', saveInput);
     printBtn.addEventListener('click', () => window.print());
+    clearCacheBtn.addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEYS.input);
+      localStorage.removeItem(STORAGE_KEYS.history);
+      localStorage.removeItem(STORAGE_KEYS.barcodes);
+      input.value = '';
+      barcodeWrap.innerHTML = '';
+      historyList.innerHTML = '';
+      error.textContent = 'Cache cleared.';
+      input.focus();
+    });
 
     loadCache();
+    loadCachedBarcodes();
   </script>
 </body>
 </html>
