@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual Barcode Creator</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f5f7fb;
+      color: #1a1a1a;
+    }
+
+    .card {
+      width: min(640px, 92vw);
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.45rem;
+    }
+
+    p {
+      margin: 0 0 18px;
+      color: #4a4a4a;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input {
+      flex: 1 1 280px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid #b7bfd1;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 11px 16px;
+      border: none;
+      border-radius: 10px;
+      background: #0066ff;
+      color: #fff;
+      font-size: 0.96rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover { background: #0050cc; }
+
+    .error {
+      margin-top: 10px;
+      color: #b00020;
+      min-height: 1.2em;
+    }
+
+    .barcode-wrap {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px dashed #c9cfe0;
+      border-radius: 12px;
+      background: #fff;
+      overflow-x: auto;
+    }
+
+    #barcode {
+      display: block;
+      margin: 0 auto;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Visual Barcode Creator</h1>
+    <p>Type only numbers (0-9), then click <strong>Generate Barcode</strong> to create a scannable CODE128 barcode.</p>
+
+    <div class="controls">
+      <input id="barcodeInput" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Example: 1234567890" aria-label="Numbers for barcode" />
+      <button id="generateBtn" type="button">Generate Barcode</button>
+    </div>
+
+    <div id="error" class="error" role="alert" aria-live="polite"></div>
+
+    <div class="barcode-wrap">
+      <svg id="barcode" aria-label="Generated barcode"></svg>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script>
+    const input = document.getElementById('barcodeInput');
+    const button = document.getElementById('generateBtn');
+    const barcodeTarget = document.getElementById('barcode');
+    const error = document.getElementById('error');
+
+    function generateBarcode() {
+      const value = input.value.trim();
+
+      if (!/^\d+$/.test(value)) {
+        error.textContent = 'Please enter numbers only (at least one digit).';
+        barcodeTarget.innerHTML = '';
+        return;
+      }
+
+      error.textContent = '';
+
+      JsBarcode(barcodeTarget, value, {
+        format: 'CODE128',
+        lineColor: '#000000',
+        width: 2,
+        height: 90,
+        margin: 12,
+        displayValue: true,
+        fontSize: 16
+      });
+    }
+
+    button.addEventListener('click', generateBarcode);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') generateBarcode();
+    });
+  </script>
+</body>
+</html>
