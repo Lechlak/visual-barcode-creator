@@ -6,37 +6,37 @@
   <title>Visual Barcode Creator</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #1a1a1a; padding: 20px; }
-    .card { width: min(960px, 96vw); margin: 0 auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 25px rgba(0,0,0,.08); }
-    h1 { margin: 0 0 8px; }
-    p { margin: 0 0 16px; color: #4a4a4a; }
+    .card { width: min(1000px, 96vw); margin: 0 auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 25px rgba(0,0,0,.08); }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     input { width: 100%; padding: 10px; border: 1px solid #b7bfd1; border-radius: 10px; box-sizing: border-box; }
     .controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
-    button { padding: 10px 14px; border:0; border-radius:10px; cursor:pointer; font-weight:600; background:#0066ff; color:#fff; }
+    button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; font-weight:600; background:#0066ff; color:#fff; }
     button.secondary { background:#5c657a; }
     .error { min-height: 1.2em; margin-top: 10px; color:#b00020; }
     .patron { margin-top: 18px; padding-top: 16px; border-top: 2px solid #d8deee; }
-    .patron h3 { margin: 0 0 8px; }
-    .barcode-item { text-align:center; margin-bottom: 16px; page-break-inside: avoid; }
-    .barcode-value { margin-top:6px; font-size:.9rem; }
-    hr.patron-separator { border: none; border-top: 2px dashed #aab4cc; margin: 20px 0 0; }
+    .patron-head { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+    .patron-head input { max-width: 260px; }
+    .badge { font-size:.85rem; color:#4a4a4a; }
+    .barcode-item { text-align:center; margin-bottom:16px; page-break-inside: avoid; }
+    hr.patron-separator { border:none; border-top:2px dashed #aab4cc; margin:20px 0 0; }
     .history { margin-top: 18px; border-top: 1px solid #e0e5f0; padding-top: 12px; }
-    #historyList { margin:0; padding-left:18px; max-height:150px; overflow:auto; }
-    @media print {
-      .no-print { display:none !important; }
-      .card { box-shadow:none; }
-    }
+    @media print { .no-print { display:none !important; } .card { box-shadow:none; } }
   </style>
 </head>
 <body>
   <main class="card">
     <h1>Visual Barcode Creator</h1>
-    <p>Use <strong>Add Patron</strong>, then scan/enter barcode and click <strong>Add Barcode</strong>. Each patron is segmented with a divider.</p>
+    <p>Newest patrons appear first. Add patron barcode/number or name, then add barcode items.</p>
 
     <div class="no-print">
-      <input id="barcodeInput" type="text" inputmode="numeric" placeholder="Scan or enter barcode number" aria-label="Barcode value" />
+      <div class="row">
+        <input id="patronCodeInput" type="text" placeholder="Patron # / Barcode (editable)" />
+        <input id="patronNameInput" type="text" placeholder="Patron name (editable)" />
+        <input id="barcodeInput" type="text" inputmode="numeric" placeholder="Scan item barcode" />
+      </div>
       <div class="controls">
         <button id="addPatronBtn" type="button" class="secondary">Add Patron</button>
-        <button id="addBarcodeBtn" type="button">Add Barcode</button>
+        <button id="addBarcodeBtn" type="button">Add Barcode Item</button>
         <button id="exportWordBtn" type="button" class="secondary">Export Word (.doc)</button>
         <button id="printBtn" type="button" class="secondary">Print / Save PDF</button>
         <button id="clearCacheBtn" type="button" class="secondary">Clear Cache</button>
@@ -44,16 +44,14 @@
       <div id="error" class="error" role="alert" aria-live="polite"></div>
     </div>
 
-    <section id="patronsWrap" aria-label="Generated patron barcodes"></section>
-
-    <section class="history no-print" aria-label="Generation history">
-      <h2>Running Log (saved in cache)</h2>
-      <ol id="historyList"></ol>
-    </section>
+    <section id="patronsWrap"></section>
+    <section class="history no-print"><h2>Running Log</h2><ol id="historyList"></ol></section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script>
+    const patronCodeInput = document.getElementById('patronCodeInput');
+    const patronNameInput = document.getElementById('patronNameInput');
     const barcodeInput = document.getElementById('barcodeInput');
     const addPatronBtn = document.getElementById('addPatronBtn');
     const addBarcodeBtn = document.getElementById('addBarcodeBtn');
@@ -61,50 +59,76 @@
     const printBtn = document.getElementById('printBtn');
     const clearCacheBtn = document.getElementById('clearCacheBtn');
     const patronsWrap = document.getElementById('patronsWrap');
-    const error = document.getElementById('error');
     const historyList = document.getElementById('historyList');
+    const error = document.getElementById('error');
 
-    const STORAGE_KEYS = {
-      patrons: 'barcode_creator_patrons',
-      history: 'barcode_creator_history'
-    };
+    const STORAGE_KEYS = { patrons: 'barcode_creator_patrons', history: 'barcode_creator_history' };
 
-    function getPatrons() {
-      return JSON.parse(localStorage.getItem(STORAGE_KEYS.patrons) || '[]');
+    const readPatrons = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.patrons) || '[]');
+    const savePatrons = (patrons) => localStorage.setItem(STORAGE_KEYS.patrons, JSON.stringify(patrons));
+
+    function addHistory(msg) {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
+      history.unshift(`${new Date().toLocaleString()}: ${msg}`);
+      localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(history.slice(0, 50)));
+      renderHistory();
     }
 
-    function savePatrons(patrons) {
-      localStorage.setItem(STORAGE_KEYS.patrons, JSON.stringify(patrons));
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
+      historyList.innerHTML = '';
+      history.forEach((line) => { const li = document.createElement('li'); li.textContent = line; historyList.appendChild(li); });
     }
 
-    function renderPatrons(patrons) {
+    function renderPatrons() {
+      const patrons = readPatrons();
       patronsWrap.innerHTML = '';
+
       patrons.forEach((patron, index) => {
         const section = document.createElement('section');
         section.className = 'patron';
 
-        const title = document.createElement('h3');
-        title.textContent = `Patron ${index + 1}`;
-        section.appendChild(title);
+        const head = document.createElement('div');
+        head.className = 'patron-head';
 
-        patron.barcodes.forEach((value) => {
+        const codeEdit = document.createElement('input');
+        codeEdit.value = patron.patronCode || '';
+        codeEdit.placeholder = 'Patron # / Barcode';
+        codeEdit.addEventListener('change', () => updatePatron(index, { patronCode: codeEdit.value }));
+
+        const nameEdit = document.createElement('input');
+        nameEdit.value = patron.patronName || '';
+        nameEdit.placeholder = 'Patron name';
+        nameEdit.addEventListener('change', () => updatePatron(index, { patronName: nameEdit.value }));
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = `Patron group ${patrons.length - index} (newest first)`;
+
+        head.appendChild(codeEdit);
+        head.appendChild(nameEdit);
+        head.appendChild(badge);
+        section.appendChild(head);
+
+        if (/^\d+$/.test((patron.patronCode || '').trim())) {
+          const patronSvgWrap = document.createElement('div');
+          patronSvgWrap.className = 'barcode-item';
+          const patronSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          JsBarcode(patronSvg, patron.patronCode.trim(), { format: 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          patronSvgWrap.appendChild(patronSvg);
+          section.appendChild(patronSvgWrap);
+        }
+
+        patron.items.forEach((value) => {
           const item = document.createElement('div');
           item.className = 'barcode-item';
-
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, value, { format: 'CODE128', lineColor: '#000', width: 2, height: 90, margin: 12, displayValue: false });
-
-          const text = document.createElement('div');
-          text.className = 'barcode-value';
-          text.textContent = value;
-
+          JsBarcode(svg, value, { format: 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
           item.appendChild(svg);
-          item.appendChild(text);
           section.appendChild(item);
         });
 
         patronsWrap.appendChild(section);
-
         if (index < patrons.length - 1) {
           const hr = document.createElement('hr');
           hr.className = 'patron-separator';
@@ -113,106 +137,53 @@
       });
     }
 
-    function addHistory(message) {
-      const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-      history.unshift(`${new Date().toLocaleString()}: ${message}`);
-      const trimmed = history.slice(0, 40);
-      localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(trimmed));
-      historyList.innerHTML = '';
-      trimmed.forEach((line) => {
-        const li = document.createElement('li');
-        li.textContent = line;
-        historyList.appendChild(li);
-      });
-    }
-
-    function loadHistory() {
-      const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-      historyList.innerHTML = '';
-      history.forEach((line) => {
-        const li = document.createElement('li');
-        li.textContent = line;
-        historyList.appendChild(li);
-      });
-    }
-
-    function ensureAtLeastOnePatron() {
-      const patrons = getPatrons();
-      if (!patrons.length) {
-        patrons.push({ barcodes: [] });
-        savePatrons(patrons);
-      }
-      return patrons;
+    function updatePatron(index, patch) {
+      const patrons = readPatrons();
+      patrons[index] = { ...patrons[index], ...patch };
+      savePatrons(patrons);
+      addHistory(`Updated Patron ${patrons.length - index} details`);
+      renderPatrons();
     }
 
     function addPatron() {
-      const patrons = getPatrons();
-      patrons.push({ barcodes: [] });
+      const patrons = readPatrons();
+      patrons.unshift({ patronCode: patronCodeInput.value.trim(), patronName: patronNameInput.value.trim(), items: [] });
       savePatrons(patrons);
-      renderPatrons(patrons);
-      addHistory(`Added Patron ${patrons.length}`);
-      error.textContent = '';
+      addHistory(`Added new patron ${patronCodeInput.value.trim() || '(no code)'}`);
+      renderPatrons();
       barcodeInput.focus();
+      error.textContent = '';
     }
 
-    function addBarcode() {
+    function addBarcodeItem() {
       const value = barcodeInput.value.trim();
-      if (!/^\d+$/.test(value)) {
-        error.textContent = 'Enter numbers only (0-9).';
-        return;
-      }
-
-      const patrons = ensureAtLeastOnePatron();
-      const currentPatron = patrons[patrons.length - 1];
-      currentPatron.barcodes.push(value);
+      if (!/^\d+$/.test(value)) { error.textContent = 'Item barcode must be numbers only.'; return; }
+      const patrons = readPatrons();
+      if (!patrons.length) patrons.unshift({ patronCode: patronCodeInput.value.trim(), patronName: patronNameInput.value.trim(), items: [] });
+      patrons[0].items.push(value);
       savePatrons(patrons);
-      renderPatrons(patrons);
-      addHistory(`Added barcode ${value} to Patron ${patrons.length}`);
-
+      addHistory(`Added item ${value} to newest patron`);
+      renderPatrons();
       error.textContent = '';
       barcodeInput.value = '';
       barcodeInput.focus();
     }
 
     function exportToWord() {
-      if (!patronsWrap.children.length) {
-        error.textContent = 'Add at least one barcode before exporting.';
-        return;
-      }
-      const html = `<!doctype html><html><head><meta charset="UTF-8"></head><body>${patronsWrap.innerHTML}</body></html>`;
-      const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'patron-barcodes.doc';
-      a.click();
-      URL.revokeObjectURL(url);
+      if (!patronsWrap.children.length) { error.textContent = 'Nothing to export.'; return; }
+      const blob = new Blob(['\ufeff', `<!doctype html><html><body>${patronsWrap.innerHTML}</body></html>`], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'patron-barcodes.doc'; a.click(); URL.revokeObjectURL(url);
     }
 
     addPatronBtn.addEventListener('click', addPatron);
-    addBarcodeBtn.addEventListener('click', addBarcode);
+    addBarcodeBtn.addEventListener('click', addBarcodeItem);
     exportWordBtn.addEventListener('click', exportToWord);
     printBtn.addEventListener('click', () => window.print());
-    clearCacheBtn.addEventListener('click', () => {
-      localStorage.removeItem(STORAGE_KEYS.patrons);
-      localStorage.removeItem(STORAGE_KEYS.history);
-      patronsWrap.innerHTML = '';
-      historyList.innerHTML = '';
-      error.textContent = 'Cache cleared.';
-      barcodeInput.value = '';
-      barcodeInput.focus();
-    });
+    clearCacheBtn.addEventListener('click', () => { localStorage.removeItem(STORAGE_KEYS.patrons); localStorage.removeItem(STORAGE_KEYS.history); renderPatrons(); renderHistory(); error.textContent='Cache cleared.'; });
+    barcodeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBarcodeItem(); }});
 
-    barcodeInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        addBarcode();
-      }
-    });
-
-    const patrons = ensureAtLeastOnePatron();
-    renderPatrons(patrons);
-    loadHistory();
+    renderPatrons();
+    renderHistory();
   </script>
 </body>
 </html>
