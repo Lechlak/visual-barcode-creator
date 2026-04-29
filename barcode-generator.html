@@ -8,7 +8,7 @@
     body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #1a1a1a; padding: 20px; }
     .card { width: min(1000px, 96vw); margin: 0 auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 25px rgba(0,0,0,.08); }
     .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    input { width: 100%; padding: 10px; border: 1px solid #b7bfd1; border-radius: 10px; box-sizing: border-box; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #b7bfd1; border-radius: 10px; box-sizing: border-box; }
     .controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
     button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; font-weight:600; background:#0066ff; color:#fff; }
     button.secondary { background:#5c657a; }
@@ -34,6 +34,12 @@
         <input id="patronNameInput" type="text" placeholder="Patron name (editable)" />
         <input id="barcodeInput" type="text" inputmode="numeric" placeholder="Scan item barcode" />
       </div>
+      <div class="row" style="margin-top:10px; grid-template-columns: 1fr 2fr 2fr;">
+        <select id="barcodeFormatInput">
+          <option value="CODE128">CODE128</option>
+          <option value="CODE39">CODE39</option>
+        </select>
+      </div>
       <div class="controls">
         <button id="addPatronBtn" type="button" class="secondary">Add Patron</button>
         <button id="addBarcodeBtn" type="button">Add Barcode Item</button>
@@ -53,6 +59,7 @@
     const patronCodeInput = document.getElementById('patronCodeInput');
     const patronNameInput = document.getElementById('patronNameInput');
     const barcodeInput = document.getElementById('barcodeInput');
+    const barcodeFormatInput = document.getElementById('barcodeFormatInput');
     const addPatronBtn = document.getElementById('addPatronBtn');
     const addBarcodeBtn = document.getElementById('addBarcodeBtn');
     const exportWordBtn = document.getElementById('exportWordBtn');
@@ -114,16 +121,18 @@
           const patronSvgWrap = document.createElement('div');
           patronSvgWrap.className = 'barcode-item';
           const patronSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(patronSvg, patron.patronCode.trim(), { format: 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          JsBarcode(patronSvg, patron.patronCode.trim(), { format: patron.patronFormat || 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
           patronSvgWrap.appendChild(patronSvg);
           section.appendChild(patronSvgWrap);
         }
 
-        patron.items.forEach((value) => {
+        patron.items.forEach((entry) => {
           const item = document.createElement('div');
           item.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, value, { format: 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          const value = typeof entry === 'string' ? entry : entry.value;
+          const format = (typeof entry === 'string' ? patron.itemFormat : entry.format) || 'CODE128';
+          JsBarcode(svg, value, { format, lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
           item.appendChild(svg);
           section.appendChild(item);
         });
@@ -147,7 +156,7 @@
 
     function addPatron() {
       const patrons = readPatrons();
-      patrons.unshift({ patronCode: patronCodeInput.value.trim(), patronName: patronNameInput.value.trim(), items: [] });
+      patrons.unshift({ patronCode: patronCodeInput.value.trim(), patronName: patronNameInput.value.trim(), patronFormat: barcodeFormatInput.value, itemFormat: barcodeFormatInput.value, items: [] });
       savePatrons(patrons);
       addHistory(`Added new patron ${patronCodeInput.value.trim() || '(no code)'}`);
       renderPatrons();
@@ -157,10 +166,11 @@
 
     function addBarcodeItem() {
       const value = barcodeInput.value.trim();
-      if (!/^\d+$/.test(value)) { error.textContent = 'Item barcode must be numbers only.'; return; }
+      const selectedFormat = barcodeFormatInput.value;
+      if (selectedFormat === 'CODE128' && !/^\d+$/.test(value)) { error.textContent = 'For CODE128 in this workflow, use numbers only.'; return; }
       const patrons = readPatrons();
-      if (!patrons.length) patrons.unshift({ patronCode: patronCodeInput.value.trim(), patronName: patronNameInput.value.trim(), items: [] });
-      patrons[0].items.push(value);
+      if (!patrons.length) patrons.unshift({ patronCode: patronCodeInput.value.trim(), patronName: patronNameInput.value.trim(), patronFormat: barcodeFormatInput.value, itemFormat: barcodeFormatInput.value, items: [] });
+      patrons[0].items.push({ value, format: barcodeFormatInput.value });
       savePatrons(patrons);
       addHistory(`Added item ${value} to newest patron`);
       renderPatrons();
