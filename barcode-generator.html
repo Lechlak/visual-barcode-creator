@@ -14,39 +14,37 @@
       place-items: center;
       background: #f5f7fb;
       color: #1a1a1a;
+      padding: 20px;
     }
 
     .card {
-      width: min(640px, 92vw);
+      width: min(860px, 96vw);
       background: #ffffff;
       border-radius: 14px;
       padding: 24px;
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
     }
 
-    h1 {
-      margin: 0 0 8px;
-      font-size: 1.45rem;
-    }
+    h1 { margin: 0 0 8px; font-size: 1.45rem; }
 
-    p {
-      margin: 0 0 18px;
-      color: #4a4a4a;
+    p { margin: 0 0 18px; color: #4a4a4a; }
+
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid #b7bfd1;
+      font-size: 1rem;
+      resize: vertical;
+      box-sizing: border-box;
     }
 
     .controls {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      align-items: center;
-    }
-
-    input {
-      flex: 1 1 280px;
-      padding: 11px 12px;
-      border-radius: 10px;
-      border: 1px solid #b7bfd1;
-      font-size: 1rem;
+      margin-top: 10px;
     }
 
     button {
@@ -60,12 +58,26 @@
       font-weight: 600;
     }
 
-    button:hover { background: #0050cc; }
+    button.secondary { background: #5c657a; }
+    button:hover { filter: brightness(0.95); }
 
-    .error {
-      margin-top: 10px;
-      color: #b00020;
-      min-height: 1.2em;
+    .error { margin-top: 10px; color: #b00020; min-height: 1.2em; }
+
+    .history {
+      margin-top: 18px;
+      border-top: 1px solid #e0e5f0;
+      padding-top: 12px;
+    }
+
+    .history h2 { margin: 0 0 8px; font-size: 1rem; }
+
+    #historyList {
+      margin: 0;
+      padding-left: 18px;
+      max-height: 160px;
+      overflow: auto;
+      color: #333;
+      font-size: 0.93rem;
     }
 
     .barcode-wrap {
@@ -77,63 +89,190 @@
       overflow-x: auto;
     }
 
-    #barcode {
-      display: block;
-      margin: 0 auto;
-      background: #fff;
+    .barcode-item {
+      margin-bottom: 20px;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+
+    .barcode-item:last-child { margin-bottom: 0; }
+
+    .barcode-value {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: #222;
+      word-break: break-word;
+    }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .card { box-shadow: none; width: 100%; padding: 0; }
+      .no-print { display: none !important; }
+      .barcode-wrap { border: none; padding: 0; }
     }
   </style>
 </head>
 <body>
   <main class="card">
     <h1>Visual Barcode Creator</h1>
-    <p>Type only numbers (0-9), then click <strong>Generate Barcode</strong> to create a scannable CODE128 barcode.</p>
+    <p>Enter one numeric value per line. Use <strong>Add Line Break</strong> to create another barcode row.</p>
 
-    <div class="controls">
-      <input id="barcodeInput" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Example: 1234567890" aria-label="Numbers for barcode" />
-      <button id="generateBtn" type="button">Generate Barcode</button>
+    <div class="no-print">
+      <textarea id="barcodeInput" placeholder="Example:\n1234567890\n9876543210" aria-label="Numbers for barcode"></textarea>
+
+      <div class="controls">
+        <button id="lineBreakBtn" type="button" class="secondary">Add Line Break</button>
+        <button id="generateBtn" type="button">Generate Barcode(s)</button>
+        <button id="exportWordBtn" type="button" class="secondary">Export Word (.doc)</button>
+        <button id="printBtn" type="button" class="secondary">Print / Save PDF</button>
+      </div>
+
+      <div id="error" class="error" role="alert" aria-live="polite"></div>
     </div>
 
-    <div id="error" class="error" role="alert" aria-live="polite"></div>
+    <div class="barcode-wrap" id="barcodeWrap" aria-label="Generated barcodes"></div>
 
-    <div class="barcode-wrap">
-      <svg id="barcode" aria-label="Generated barcode"></svg>
-    </div>
+    <section class="history no-print" aria-label="Generation history">
+      <h2>Running Log (saved in cache)</h2>
+      <ol id="historyList"></ol>
+    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script>
     const input = document.getElementById('barcodeInput');
-    const button = document.getElementById('generateBtn');
-    const barcodeTarget = document.getElementById('barcode');
+    const lineBreakBtn = document.getElementById('lineBreakBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const exportWordBtn = document.getElementById('exportWordBtn');
+    const printBtn = document.getElementById('printBtn');
+    const barcodeWrap = document.getElementById('barcodeWrap');
     const error = document.getElementById('error');
+    const historyList = document.getElementById('historyList');
 
-    function generateBarcode() {
-      const value = input.value.trim();
+    const STORAGE_KEYS = {
+      input: 'barcode_creator_input',
+      history: 'barcode_creator_history'
+    };
 
-      if (!/^\d+$/.test(value)) {
-        error.textContent = 'Please enter numbers only (at least one digit).';
-        barcodeTarget.innerHTML = '';
+
+    function loadCache() {
+      const cachedInput = localStorage.getItem(STORAGE_KEYS.input);
+      if (cachedInput) input.value = cachedInput;
+
+      const cachedHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
+      renderHistory(cachedHistory);
+    }
+
+    function saveInput() {
+      localStorage.setItem(STORAGE_KEYS.input, input.value);
+    }
+
+    function addHistory(values) {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
+      const entry = {
+        generatedAt: new Date().toISOString(),
+        values
+      };
+      history.unshift(entry);
+      const trimmed = history.slice(0, 30);
+      localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(trimmed));
+      renderHistory(trimmed);
+    }
+
+    function renderHistory(history) {
+      historyList.innerHTML = '';
+      history.forEach((item) => {
+        const li = document.createElement('li');
+        const time = new Date(item.generatedAt).toLocaleString();
+        li.textContent = `${time}: ${item.values.join(', ')}`;
+        historyList.appendChild(li);
+      });
+    }
+
+    function getValues() {
+      return input.value
+        .split('\n')
+        .map((v) => v.trim())
+        .filter(Boolean);
+    }
+
+    function renderBarcodes() {
+      const values = getValues();
+      saveInput();
+
+      if (!values.length) {
+        error.textContent = 'Please enter at least one numeric value.';
+        barcodeWrap.innerHTML = '';
+        return;
+      }
+
+      const invalid = values.find((value) => !/^\d+$/.test(value));
+      if (invalid) {
+        error.textContent = `Invalid line: "${invalid}". Please use numbers only (0-9).`;
+        barcodeWrap.innerHTML = '';
         return;
       }
 
       error.textContent = '';
+      barcodeWrap.innerHTML = '';
 
-      JsBarcode(barcodeTarget, value, {
-        format: 'CODE128',
-        lineColor: '#000000',
-        width: 2,
-        height: 90,
-        margin: 12,
-        displayValue: true,
-        fontSize: 16
+      values.forEach((value) => {
+        const item = document.createElement('div');
+        item.className = 'barcode-item';
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        JsBarcode(svg, value, {
+          format: 'CODE128',
+          lineColor: '#000000',
+          width: 2,
+          height: 90,
+          margin: 12,
+          displayValue: false
+        });
+
+        const text = document.createElement('div');
+        text.className = 'barcode-value';
+        text.textContent = value;
+
+        item.appendChild(svg);
+        item.appendChild(text);
+        barcodeWrap.appendChild(item);
       });
+
+      addHistory(values);
     }
 
-    button.addEventListener('click', generateBarcode);
-    input.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') generateBarcode();
+    function exportToWord() {
+      if (!barcodeWrap.children.length) {
+        error.textContent = 'Generate at least one barcode before exporting.';
+        return;
+      }
+
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${barcodeWrap.innerHTML}</body></html>`;
+      const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'barcodes.doc';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    lineBreakBtn.addEventListener('click', () => {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const text = input.value;
+      input.value = text.slice(0, start) + '\n' + text.slice(end);
+      input.focus();
+      input.selectionStart = input.selectionEnd = start + 1;
     });
+
+    generateBtn.addEventListener('click', renderBarcodes);
+    exportWordBtn.addEventListener('click', exportToWord);
+    input.addEventListener('input', saveInput);
+    printBtn.addEventListener('click', () => window.print());
+
+    loadCache();
   </script>
 </body>
 </html>
