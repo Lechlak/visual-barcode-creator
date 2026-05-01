@@ -7,216 +7,267 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #1a1a1a; padding: 20px; }
     .card { width: min(1080px, 96vw); margin: 0 auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 25px rgba(0,0,0,.08); }
-    .row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: end; }
     input, select { width: 100%; padding: 10px; border: 1px solid #b7bfd1; border-radius: 10px; box-sizing: border-box; }
-    .controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
     button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; font-weight:600; background:#0066ff; color:#fff; }
     button.secondary { background:#5c657a; }
     .error { min-height: 1.2em; margin-top: 10px; color:#b00020; }
     .patron { margin-top: 18px; padding-top: 16px; border-top: 2px solid #d8deee; }
     .patron-head { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
-    .patron-head input { max-width: 240px; }
-    .badge { font-size:.85rem; color:#4a4a4a; }
+    .badge { font-size:.85rem; color:#4a4a4a; background: #e0e5f0; padding: 4px 8px; border-radius: 4px; }
     .barcode-item { text-align:center; margin-bottom:16px; page-break-inside: avoid; }
     hr.patron-separator { border:none; border-top:2px dashed #aab4cc; margin:20px 0 0; }
-    .history { margin-top: 18px; border-top: 1px solid #e0e5f0; padding-top: 12px; }
+
+    .hidden { display: none !important; }
+    #currentPatronSummary { background: #eef2ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #c7d2fe; display: flex; align-items: center; justify-content: space-between; }
+    #currentPatronSummary h3 { margin: 0; color: #3730a3; font-size: 16px; }
+    #currentPatronSummary span { color: #4f46e5; font-weight: normal; margin-left: 10px; }
+
     @media print { .no-print { display:none !important; } .card { box-shadow:none; } }
   </style>
 </head>
 <body>
   <main class="card">
     <h1>Visual Barcode Creator</h1>
-    <p>Data is separated by location. Select location, then add patrons and item barcodes. Export CSV per location for records.</p>
+    <p>Location is dynamically set from the URL (e.g., <code>?location=Location1</code>). Start by entering Patron details.</p>
 
     <div class="no-print">
-      <div class="row">
-        <select id="locationSelect"></select>
-        <input id="patronCodeInput" type="text" placeholder="Patron # / Barcode" />
-        <input id="patronNameInput" type="text" placeholder="Patron name" />
-        <input id="barcodeInput" type="text" placeholder="Scan item barcode" />
-      </div>
-      <div class="row" style="margin-top:10px; grid-template-columns: 1fr 1fr 1fr 1fr;">
-        <select id="barcodeFormatInput">
-          <option value="CODE128">CODE128</option>
-          <option value="CODE39">CODE39</option>
-        </select>
+      <div id="locationDisplay" style="margin-bottom: 15px; font-weight: bold; color: #0066ff;"></div>
+
+      <!-- Step 1: Patron Details Entry -->
+      <div id="patronEntrySection">
+        <div class="row" style="grid-template-columns: 1fr 1fr;">
+          <input id="patronCodeInput" type="text" placeholder="Patron # / Barcode" />
+          <input id="patronNameInput" type="text" placeholder="Patron name" />
+        </div>
+        <div class="controls">
+          <button id="startPatronBtn" type="button">Start Patron</button>
+        </div>
       </div>
 
-      <div class="controls">
-        <button id="addPatronBtn" type="button" class="secondary">Add Patron</button>
-        <button id="addBarcodeBtn" type="button">Add Barcode Item</button>
-        <button id="exportCsvBtn" type="button" class="secondary">Export CSV (Location)</button>
-        <button id="exportWordBtn" type="button" class="secondary">Export Word (.doc)</button>
-        <button id="printBtn" type="button" class="secondary">Print / Save PDF</button>
-        <button id="clearLocationBtn" type="button" class="secondary">Clear Current Location</button>
+      <!-- Step 2: Active Patron Summary (Editable) & Item Barcode Scanning -->
+      <div id="activePatronSection" class="hidden">
+        <div id="currentPatronSummary">
+            <div>
+                <h3>Active Patron: <span id="displayPatronName"></span> <span id="displayPatronCode"></span></h3>
+            </div>
+            <button id="editPatronBtn" type="button" class="secondary" style="padding: 5px 10px; font-size: 12px;">Edit</button>
+        </div>
+
+        <div class="row" style="grid-template-columns: 2fr 1fr;">
+          <input id="barcodeInput" type="text" placeholder="Scan item barcode" />
+          <select id="barcodeFormatInput">
+            <option value="CODE128">CODE128</option>
+            <option value="CODE39">CODE39</option>
+          </select>
+        </div>
+
+        <div class="controls" style="margin-top: 10px;">
+          <button id="addBarcodeBtn" type="button">Add Item</button>
+          <button id="completePatronBtn" type="button" style="background: #10b981;">Complete & Add Patron</button>
+        </div>
       </div>
+
+      <div class="controls" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+        <button id="printBtn" type="button" class="secondary">Print / Save PDF</button>
+      </div>
+
       <div id="error" class="error" role="alert" aria-live="polite"></div>
     </div>
 
+    <!-- Active visually scanned items (cleared on complete) -->
     <section id="patronsWrap"></section>
-    <section class="history no-print"><h2>Running Log (current location)</h2><ol id="historyList"></ol></section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script>
-    const LOCATIONS = Array.from({ length: 20 }, (_, i) => `Location ${i + 1}`);
-    const STORAGE_KEY = 'barcode_creator_location_data';
+    // URL Parameter parsing
+    const urlParams = new URLSearchParams(window.location.search);
+    const locationParam = urlParams.get('location') || 'Default Location';
 
-    const locationSelect = document.getElementById('locationSelect');
+    document.getElementById('locationDisplay').textContent = `Current Location: ${locationParam}`;
+
+    // DOM Elements
+    const patronEntrySection = document.getElementById('patronEntrySection');
+    const activePatronSection = document.getElementById('activePatronSection');
+
     const patronCodeInput = document.getElementById('patronCodeInput');
     const patronNameInput = document.getElementById('patronNameInput');
+    const startPatronBtn = document.getElementById('startPatronBtn');
+
+    const displayPatronName = document.getElementById('displayPatronName');
+    const displayPatronCode = document.getElementById('displayPatronCode');
+    const editPatronBtn = document.getElementById('editPatronBtn');
+
     const barcodeInput = document.getElementById('barcodeInput');
     const barcodeFormatInput = document.getElementById('barcodeFormatInput');
-    const addPatronBtn = document.getElementById('addPatronBtn');
     const addBarcodeBtn = document.getElementById('addBarcodeBtn');
-    const exportCsvBtn = document.getElementById('exportCsvBtn');
-    const exportWordBtn = document.getElementById('exportWordBtn');
+    const completePatronBtn = document.getElementById('completePatronBtn');
+
     const printBtn = document.getElementById('printBtn');
-    const clearLocationBtn = document.getElementById('clearLocationBtn');
-    const patronsWrap = document.getElementById('patronsWrap');
-    const historyList = document.getElementById('historyList');
     const error = document.getElementById('error');
+    const patronsWrap = document.getElementById('patronsWrap');
 
-    function getAllData() {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      LOCATIONS.forEach((loc) => { if (!data[loc]) data[loc] = { patrons: [], history: [] }; });
-      return data;
-    }
-    function saveAllData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-    function currentLocation() { return locationSelect.value; }
-    function locationData() { return getAllData()[currentLocation()]; }
+    // State
+    let currentPatron = null; // { code, name, items: [] }
 
-    function addHistory(msg) {
-      const data = getAllData();
-      const loc = currentLocation();
-      data[loc].history.unshift(`${new Date().toLocaleString()}: ${msg}`);
-      data[loc].history = data[loc].history.slice(0, 80);
-      saveAllData(data);
-      renderHistory();
-    }
+    function renderActivePatronItems() {
+        patronsWrap.innerHTML = '';
+        if (!currentPatron) return;
 
-    function renderHistory() {
-      const { history } = locationData();
-      historyList.innerHTML = '';
-      history.forEach((line) => { const li = document.createElement('li'); li.textContent = line; historyList.appendChild(li); });
-    }
-
-    function renderPatrons() {
-      const { patrons } = locationData();
-      patronsWrap.innerHTML = '';
-      patrons.forEach((patron, index) => {
         const section = document.createElement('section'); section.className = 'patron';
         const head = document.createElement('div'); head.className = 'patron-head';
 
-        const codeEdit = document.createElement('input'); codeEdit.value = patron.patronCode || ''; codeEdit.placeholder = 'Patron # / Barcode';
-        codeEdit.addEventListener('change', () => updatePatron(index, { patronCode: codeEdit.value }));
-        const nameEdit = document.createElement('input'); nameEdit.value = patron.patronName || ''; nameEdit.placeholder = 'Patron name';
-        nameEdit.addEventListener('change', () => updatePatron(index, { patronName: nameEdit.value }));
-        const badge = document.createElement('span'); badge.className = 'badge'; badge.textContent = `Patron group ${patrons.length - index} (${currentLocation()})`;
+        const badge = document.createElement('span'); badge.className = 'badge';
+        badge.textContent = `${currentPatron.name || 'Unknown'} (${currentPatron.code || 'No Code'})`;
+        head.appendChild(badge); section.appendChild(head);
 
-        head.append(codeEdit, nameEdit, badge); section.appendChild(head);
-
-        if (patron.patronCode && /^\d+$/.test(patron.patronCode.trim())) {
+        // Render patron barcode if exists
+        if (currentPatron.code && /^\d+$/.test(currentPatron.code.trim())) {
           const wrap = document.createElement('div'); wrap.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, patron.patronCode.trim(), { format: patron.patronFormat || 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          JsBarcode(svg, currentPatron.code.trim(), { format: 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
           wrap.appendChild(svg); section.appendChild(wrap);
         }
 
-        patron.items.forEach((entry) => {
-          const value = typeof entry === 'string' ? entry : entry.value;
-          const format = (typeof entry === 'string' ? patron.itemFormat : entry.format) || 'CODE128';
+        // Render items
+        currentPatron.items.forEach((entry) => {
           const item = document.createElement('div'); item.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, value, { format, lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          JsBarcode(svg, entry.value, { format: entry.format, lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
           item.appendChild(svg); section.appendChild(item);
         });
 
         patronsWrap.appendChild(section);
-        if (index < patrons.length - 1) { const hr = document.createElement('hr'); hr.className = 'patron-separator'; patronsWrap.appendChild(hr); }
-      });
     }
 
-    function updatePatron(index, patch) {
-      const data = getAllData();
-      const loc = currentLocation();
-      data[loc].patrons[index] = { ...data[loc].patrons[index], ...patch };
-      saveAllData(data);
-      addHistory(`Updated patron details`);
-      renderPatrons();
-    }
+    // Step 1: Start Patron
+    startPatronBtn.addEventListener('click', () => {
+        const pCode = patronCodeInput.value.trim();
+        const pName = patronNameInput.value.trim();
 
-    function addPatron() {
-      const data = getAllData();
-      const loc = currentLocation();
-      data[loc].patrons.unshift({ patronCode: patronCodeInput.value.trim(), patronName: patronNameInput.value.trim(), patronFormat: barcodeFormatInput.value, itemFormat: barcodeFormatInput.value, items: [] });
-      saveAllData(data);
-      addHistory(`Added patron ${patronCodeInput.value.trim() || '(no code)'}`);
-      renderPatrons();
-      error.textContent = '';
-      barcodeInput.focus();
-    }
+        if (!pCode && !pName) {
+            error.textContent = "Please enter a patron name or code.";
+            return;
+        }
 
-    function addBarcodeItem() {
-      const value = barcodeInput.value.trim();
-      if (!value) return;
-      const selectedFormat = barcodeFormatInput.value;
-      if (selectedFormat === 'CODE128' && !/^\d+$/.test(value)) { error.textContent = 'For CODE128, use numbers only.'; return; }
+        currentPatron = { code: pCode, name: pName, items: [] };
 
-      const data = getAllData();
-      const loc = currentLocation();
-      if (!data[loc].patrons.length) data[loc].patrons.unshift({ patronCode: patronCodeInput.value.trim(), patronName: patronNameInput.value.trim(), patronFormat: selectedFormat, itemFormat: selectedFormat, items: [] });
-      data[loc].patrons[0].items.push({ value, format: selectedFormat });
-      saveAllData(data);
-      addHistory(`Added item ${value}`);
-      renderPatrons();
-      barcodeInput.value = '';
-      barcodeInput.focus();
-      error.textContent = '';
-    }
+        // Update UI
+        error.textContent = "";
+        displayPatronName.textContent = pName;
+        displayPatronCode.textContent = pCode ? `[${pCode}]` : '';
 
-    function exportCsv() {
-      const { patrons } = locationData();
-      const loc = currentLocation();
-      const rows = [['location','patron_order','patron_code','patron_name','barcode_type','barcode_value','is_patron_barcode']];
-      patrons.forEach((patron, idx) => {
-        if (patron.patronCode) rows.push([loc, idx + 1, patron.patronCode || '', patron.patronName || '', patron.patronFormat || 'CODE128', patron.patronCode || '', 'yes']);
-        patron.items.forEach((entry) => rows.push([loc, idx + 1, patron.patronCode || '', patron.patronName || '', entry.format || patron.itemFormat || 'CODE128', entry.value || entry, 'no']));
-      });
-      const csv = rows.map((r) => r.map((x) => `"${String(x).replaceAll('"','""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${loc.replace(/\s+/g,'_').toLowerCase()}_barcodes.csv`; a.click();
-      addHistory('Exported CSV');
-    }
+        patronEntrySection.classList.add('hidden');
+        activePatronSection.classList.remove('hidden');
 
-    function exportToWord() {
-      if (!patronsWrap.children.length) { error.textContent = 'Nothing to export.'; return; }
-      const blob = new Blob(['\ufeff', `<!doctype html><html><body><h2>${currentLocation()}</h2>${patronsWrap.innerHTML}</body></html>`], { type: 'application/msword' });
-      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${currentLocation().replace(/\s+/g,'_').toLowerCase()}_barcodes.doc`; a.click();
-      addHistory('Exported Word');
-    }
+        renderActivePatronItems();
 
-    function initLocations() {
-      locationSelect.innerHTML = '';
-      LOCATIONS.forEach((loc) => { const opt = document.createElement('option'); opt.value = loc; opt.textContent = loc; locationSelect.appendChild(opt); });
-    }
-
-    locationSelect.addEventListener('change', () => { renderPatrons(); renderHistory(); error.textContent = ''; barcodeInput.focus(); });
-    addPatronBtn.addEventListener('click', addPatron);
-    addBarcodeBtn.addEventListener('click', addBarcodeItem);
-    exportCsvBtn.addEventListener('click', exportCsv);
-    exportWordBtn.addEventListener('click', exportToWord);
-    printBtn.addEventListener('click', () => window.print());
-    clearLocationBtn.addEventListener('click', () => {
-      const data = getAllData(); data[currentLocation()] = { patrons: [], history: [] }; saveAllData(data);
-      renderPatrons(); renderHistory(); error.textContent = `Cleared ${currentLocation()} data.`;
+        // Focus barcode input
+        barcodeInput.focus();
     });
-    barcodeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBarcodeItem(); } });
 
-    initLocations();
-    saveAllData(getAllData());
-    renderPatrons();
-    renderHistory();
+    // Handle enter key on Patron fields
+    patronCodeInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') patronNameInput.focus(); });
+    patronNameInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') startPatronBtn.click(); });
+
+
+    // Step 2a: Edit Patron
+    editPatronBtn.addEventListener('click', () => {
+        patronEntrySection.classList.remove('hidden');
+        activePatronSection.classList.add('hidden');
+        patronCodeInput.focus();
+    });
+
+    // Step 2b: Add Item Barcode
+    function addItem() {
+        if (!currentPatron) return;
+        const val = barcodeInput.value.trim();
+        if (!val) return;
+
+        const format = barcodeFormatInput.value;
+        if (format === 'CODE128' && !/^\d+$/.test(val)) {
+            error.textContent = 'For CODE128, use numbers only.';
+            return;
+        }
+
+        currentPatron.items.push({ value: val, format: format });
+        error.textContent = "";
+
+        renderActivePatronItems();
+
+        barcodeInput.value = '';
+        barcodeInput.focus();
+    }
+    addBarcodeBtn.addEventListener('click', addItem);
+    barcodeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } });
+
+
+    // Step 3: Complete & Save Patron
+    completePatronBtn.addEventListener('click', async () => {
+        if (!currentPatron) return;
+        if (!currentPatron.code && currentPatron.items.length === 0) {
+            error.textContent = "Nothing to save.";
+            return;
+        }
+
+        completePatronBtn.disabled = true;
+        completePatronBtn.textContent = 'Saving...';
+        error.textContent = '';
+
+        try {
+            const response = await fetch('/api/save-batch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    location: locationParam,
+                    patronCode: currentPatron.code,
+                    patronName: currentPatron.name,
+                    items: currentPatron.items
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Server error');
+            }
+
+            // Success: Reset flow
+            currentPatron = null;
+            patronCodeInput.value = '';
+            patronNameInput.value = '';
+            barcodeInput.value = '';
+
+            activePatronSection.classList.add('hidden');
+            patronEntrySection.classList.remove('hidden');
+            patronsWrap.innerHTML = '';
+
+            error.style.color = '#10b981'; // Green temp message
+            error.textContent = "Patron and items saved successfully!";
+            setTimeout(() => {
+                error.textContent = "";
+                error.style.color = '#b00020';
+            }, 3000);
+
+            patronCodeInput.focus();
+
+        } catch (err) {
+            console.error(err);
+            error.textContent = "Failed to save: " + err.message;
+        } finally {
+            completePatronBtn.disabled = false;
+            completePatronBtn.textContent = 'Complete & Add Patron';
+        }
+    });
+
+    // Print
+    printBtn.addEventListener('click', () => window.print());
+
   </script>
 </body>
 </html>
