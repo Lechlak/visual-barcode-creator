@@ -153,7 +153,12 @@
             return;
         }
 
-        currentPatron = { code: pCode, name: pName, items: [] };
+        if (currentPatron) {
+            currentPatron.code = pCode;
+            currentPatron.name = pName;
+        } else {
+            currentPatron = { code: pCode, name: pName, items: [] };
+        }
 
         // Update UI
         error.textContent = "";
@@ -218,7 +223,7 @@
         error.textContent = '';
 
         try {
-            const response = await fetch('/api/save-batch', {
+            const response = await fetch('/.netlify/functions/save-batch', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
