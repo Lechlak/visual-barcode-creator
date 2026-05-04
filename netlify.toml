@@ -1,8 +1,4 @@
 [build]
+  command = "echo 'No build command needed'"
+  publish = "public"
   functions = "netlify/functions"
-
-# Optional: redirect root to your html file if it's the main index
-[[redirects]]
-  from = "/"
-  to = "/barcode-generator.html"
-  status = 200
