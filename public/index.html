@@ -70,7 +70,8 @@
       </div>
 
       <div class="controls" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-        <button id="printBtn" type="button" class="secondary">Print / Save PDF</button>
+        <button id="printBtn" type="button" class="secondary">Print Current Screen</button>
+        <button id="printDbBtn" type="button" style="background: #6366f1;">Print All from Database (This Location)</button>
       </div>
 
       <div id="error" class="error" role="alert" aria-live="polite"></div>
@@ -272,6 +273,12 @@
 
     // Print
     printBtn.addEventListener('click', () => window.print());
+
+    // Print Database
+    const printDbBtn = document.getElementById('printDbBtn');
+    printDbBtn.addEventListener('click', () => {
+        window.open(`print.html?location=${encodeURIComponent(locationParam)}`, '_blank');
+    });
 
   </script>
 </body>
