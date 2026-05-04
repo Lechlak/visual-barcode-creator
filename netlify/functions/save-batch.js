@@ -1,9 +1,10 @@
+require('dotenv').config();
 const mysql = require('mysql2/promise');
 const { Client } = require('ssh2');
 
 const dbConfig = {
     host: process.env.DB_HOST || '127.0.0.1', // localhost when tunneling
-    port: process.env.DB_PORT || 3306,
+    port: parseInt(process.env.DB_PORT, 10) || 3306,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
@@ -11,7 +12,7 @@ const dbConfig = {
 
 const sshConfig = {
     host: process.env.SSH_HOST || '35.236.219.140',
-    port: process.env.SSH_PORT || 52335,
+    port: parseInt(process.env.SSH_PORT, 10) || 52335,
     username: process.env.SSH_USER,
     password: process.env.SSH_PASSWORD,
     // Add privateKey: process.env.SSH_KEY if needed later
