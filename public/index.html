@@ -30,7 +30,7 @@
 <body>
   <main class="card">
     <h1>Visual Barcode Creator</h1>
-    <p>Location is dynamically set from the URL (e.g., <code>?location=Location1</code>). Start by entering Patron details.</p>
+    <!--<p>Location is dynamically set from the URL (e.g., <code>?location=Location1</code>). Start by entering Patron details.</p>-->
 
     <div class="no-print">
       <div id="locationDisplay" style="margin-bottom: 15px; font-weight: bold; color: #0066ff;"></div>
@@ -38,8 +38,8 @@
       <!-- Step 1: Patron Details Entry -->
       <div id="patronEntrySection">
         <div class="row" style="grid-template-columns: 1fr 1fr;">
-          <input id="patronCodeInput" type="text" placeholder="Patron # / Barcode" />
-          <input id="patronNameInput" type="text" placeholder="Patron name" />
+          <input id="patronCodeInput" type="text" placeholder="Patron barcode" />
+          <!--<input id="patronNameInput" type="text" placeholder="Patron name" />-->
         </div>
         <div class="controls">
           <button id="startPatronBtn" type="button">Start Patron</button>
@@ -58,7 +58,7 @@
         <div class="row" style="grid-template-columns: 2fr 1fr;">
           <input id="barcodeInput" type="text" placeholder="Scan item barcode" />
           <select id="barcodeFormatInput">
-            <option value="CODE128">CODE128</option>
+            <!--<option value="CODE128">CODE128</option>-->
             <option value="CODE39">CODE39</option>
           </select>
         </div>
