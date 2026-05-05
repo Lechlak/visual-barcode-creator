@@ -18,7 +18,7 @@
     #loading { text-align: center; color: #666; font-style: italic; margin: 20px 0; }
     #error { color: #b00020; text-align: center; margin: 20px 0; font-weight: bold; }
 
-    @media print { .no-print { display:none !important; } .card { box-shadow:none; padding: 0; } body { background: #fff; } }
+    @media print { .no-print { display:none !important; } .print-only { display: block !important; } .card { box-shadow:none; padding: 0; } body { background: #fff; } }
   </style>
 </head>
 <body>
@@ -28,7 +28,35 @@
         <button onclick="window.print()">Print Page</button>
     </div>
     
-    <div id="locationDisplay" style="margin-bottom: 15px; font-weight: bold; color: #0066ff; font-size: 1.2em;"></div>
+    
+    <div style="margin-bottom: 15px; font-weight: bold; color: #0066ff; font-size: 1.2em;">
+      <div class="no-print" style="display: flex; align-items: center; gap: 10px;">
+        <label for="locationSelect">Location:</label>
+        <select id="locationSelect" style="width: auto; padding: 5px; font-size: 1em; font-weight: bold; border: 1px solid #0066ff; color: #0066ff; border-radius: 5px;">
+          <option value="Birmingham">Birmingham</option>
+          <option value="Heatherdowns">Heatherdowns</option>
+          <option value="Holland">Holland</option>
+          <option value="Kent">Kent</option>
+          <option value="King Road">King Road</option>
+          <option value="Lagrange">Lagrange</option>
+          <option value="Locke">Locke</option>
+          <option value="Main Library">Main Library</option>
+          <option value="Maumee">Maumee</option>
+          <option value="Mobile Services">Mobile Services</option>
+          <option value="Mott">Mott</option>
+          <option value="Oregon">Oregon</option>
+          <option value="Point Place">Point Place</option>
+          <option value="Reynolds Corners">Reynolds Corners</option>
+          <option value="Sanger">Sanger</option>
+          <option value="South">South</option>
+          <option value="Sylvania">Sylvania</option>
+          <option value="Washington">Washington</option>
+          <option value="Waterville">Waterville</option>
+          <option value="West Toledo">West Toledo</option>
+        </select>
+      </div>
+      <div id="locationPrintText" class="print-only" style="display: none;"></div>
+    </div>
 
     <div id="loading">Loading data from database...</div>
     <div id="error"></div>
@@ -39,15 +67,38 @@
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const locationParam = urlParams.get('location');
+    let locationParam = urlParams.get('location') || 'Birmingham';
+
+    const locationSelect = document.getElementById('locationSelect');
+    const locationPrintText = document.getElementById('locationPrintText');
     
-    if (!locationParam) {
-        document.getElementById('error').textContent = "No location parameter provided in URL.";
-        document.getElementById('loading').style.display = 'none';
-    } else {
-        document.getElementById('locationDisplay').textContent = `Location: ${locationParam}`;
-        fetchData();
+    // Initialize select options
+    let optionExists = Array.from(locationSelect.options).some(opt => opt.value === locationParam);
+    if (!optionExists && locationParam) {
+        const newOption = document.createElement('option');
+        newOption.value = locationParam;
+        newOption.textContent = locationParam;
+        locationSelect.appendChild(newOption);
     }
+    locationSelect.value = locationParam;
+    locationPrintText.textContent = `Location: ${locationParam}`;
+
+    locationSelect.addEventListener('change', (e) => {
+        locationParam = e.target.value;
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('location', locationParam);
+        window.history.pushState({}, '', newUrl);
+        
+        locationPrintText.textContent = `Location: ${locationParam}`;
+        
+        // Reset and fetch new data
+        document.getElementById('patronsWrap').innerHTML = '';
+        document.getElementById('error').textContent = '';
+        document.getElementById('loading').style.display = 'block';
+        fetchData();
+    });
+
+    fetchData();
 
     async function fetchData() {
         try {
