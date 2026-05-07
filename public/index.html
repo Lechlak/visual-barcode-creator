@@ -314,7 +314,7 @@
     });
 
     // Print
-    printBtn.addEventListener('click', () => window.print());
+    if (printBtn) { printBtn.addEventListener('click', () => window.print()); }
 
     // Print Database
     const printDbBtn = document.getElementById('printDbBtn');
