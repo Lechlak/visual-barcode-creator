@@ -313,7 +313,7 @@
     });
 
     // Print
-    printBtn.addEventListener('click', () => window.print());
+    if (printBtn) { printBtn.addEventListener('click', () => window.print()); }
 
   </script>
 </body>
