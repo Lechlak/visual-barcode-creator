@@ -189,7 +189,7 @@
     // Step 1: Start Patron
     startPatronBtn.addEventListener('click', () => {
         const pCode = patronCodeInput.value.trim();
-        const pName = patronNameInput.value.trim();
+        const pName = patronNameInput ? patronNameInput.value.trim() : '';
         
         if (!pCode && !pName) {
             error.textContent = "Please enter a patron name or code.";
@@ -218,8 +218,8 @@
     });
 
     // Handle enter key on Patron fields
-    patronCodeInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') patronNameInput.focus(); });
-    patronNameInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') startPatronBtn.click(); });
+    patronCodeInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') { if(patronNameInput) { patronNameInput.focus(); } else { startPatronBtn.click(); } } });
+    if (patronNameInput) { patronNameInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') startPatronBtn.click(); }); }
 
 
     // Step 2a: Edit Patron
@@ -288,7 +288,7 @@
             // Success: Reset flow
             currentPatron = null;
             patronCodeInput.value = '';
-            patronNameInput.value = '';
+            if (patronNameInput) patronNameInput.value = '';
             barcodeInput.value = '';
             
             activePatronSection.classList.add('hidden');
