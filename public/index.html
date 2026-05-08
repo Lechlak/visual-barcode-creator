@@ -31,6 +31,10 @@
   <main class="card">
     <h1>Visual Barcode Creator</h1>
     <!--<p>Location is dynamically set from the URL (e.g., <code>?location=Location1</code>). Start by entering Patron details.</p>-->
+      <div class="controls" style="float:right; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+        <!--<button id="printBtn" type="button" class="secondary">Print Current Screen</button>-->
+        <button id="printDbBtn" type="button" style="background: #6366f1;">Print All from Database (This Location)</button>
+      </div>
 
     <div class="no-print">
       
@@ -92,11 +96,6 @@
           <button id="addBarcodeBtn" type="button">Add Item</button>
           <button id="completePatronBtn" type="button" style="background: #10b981;">Complete & Add Patron</button>
         </div>
-      </div>
-
-      <div class="controls" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-        <!--<button id="printBtn" type="button" class="secondary">Print Current Screen</button>-->
-        <button id="printDbBtn" type="button" style="background: #6366f1;">Print All from Database (This Location)</button>
       </div>
 
       <div id="error" class="error" role="alert" aria-live="polite"></div>
