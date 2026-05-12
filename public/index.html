@@ -29,8 +29,12 @@
 </head>
 <body>
   <main class="card">
-    <h1>Visual Barcode Creator  <button id="printDbBtn" type="button" style="float:right; background: #6366f1;">Print All from Database (This Location)</button>
- </h1>
+    <h1>
+      <span id="pageTitle">Visual Barcode Creator</span>
+      <button id="printDbBtn" type="button" style="float:right; background: #6366f1;">
+        Print All from Database
+      </button>
+    </h1>
 
     <div class="no-print">
       <!-- Location Selection 
@@ -111,6 +115,8 @@
 
     const locationSelect = document.getElementById('locationSelect');
     
+    document.getElementById('pageTitle').textContent = `Visual Barcode Creator - ${locationParam}`;
+
     // Initialize select options
     let optionExists = Array.from(locationSelect.options).some(opt => opt.value === locationParam);
     if (!optionExists && locationParam) {
