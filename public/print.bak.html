@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Print Location Data</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #1a1a1a; padding: 20px; }
+    .card { width: min(1080px, 96vw); margin: 0 auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 25px rgba(0,0,0,.08); }
+    button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; font-weight:600; background:#0066ff; color:#fff; }
+    
+    .patron { margin-top: 18px; padding-top: 16px; border-top: 2px solid #d8deee; }
+    .patron-head { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+    .badge { font-size:.85rem; color:#4a4a4a; background: #e0e5f0; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+    .barcode-item { text-align:center; margin-bottom:16px; page-break-inside: avoid; }
+    hr.patron-separator { border:none; border-top:2px dashed #aab4cc; margin:20px 0 0; }
+    
+    #loading { text-align: center; color: #666; font-style: italic; margin: 20px 0; }
+    #error { color: #b00020; text-align: center; margin: 20px 0; font-weight: bold; }
+
+    @media print { .no-print { display:none !important; } .print-only { display: block !important; } .card { box-shadow:none; padding: 0; } body { background: #fff; } }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="margin: 0;">Database Print View</h1>
+        <button onclick="window.print()">Print Page</button>
+    </div>
+    
+    
+    <div style="margin-bottom: 15px; font-weight: bold; color: #0066ff; font-size: 1.2em;">
+
+      <div class="no-print" style="display: flex; align-items: center; gap: 10px;display: none;">
+        <label for="locationSelect">Location:</label>
+        <select id="locationSelect" style="width: auto; padding: 5px; font-size: 1em; font-weight: bold; border: 1px solid #0066ff; color: #0066ff; border-radius: 5px;">
+          <option value="Birmingham">Birmingham</option>
+          <option value="Heatherdowns">Heatherdowns</option>
+          <option value="Holland">Holland</option>
+          <option value="Kent">Kent</option>
+          <option value="King Road">King Road</option>
+          <option value="Lagrange">Lagrange</option>
+          <option value="Locke">Locke</option>
+          <option value="Main Library">Main Library</option>
+          <option value="Maumee">Maumee</option>
+          <option value="Mobile Services">Mobile Services</option>
+          <option value="Mott">Mott</option>
+          <option value="Oregon">Oregon</option>
+          <option value="Point Place">Point Place</option>
+          <option value="Reynolds Corners">Reynolds Corners</option>
+          <option value="Sanger">Sanger</option>
+          <option value="South">South</option>
+          <option value="Sylvania">Sylvania</option>
+          <option value="Washington">Washington</option>
+          <option value="Waterville">Waterville</option>
+          <option value="West Toledo">West Toledo</option>
+        </select>
+      </div>
+
+      <div id="locationPrintText" class="print-only" style="display: none;"></div>
+    </div>
+
+    <div id="loading">Loading data from database...</div>
+    <div id="error"></div>
+    <section id="patronsWrap"></section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    let locationParam = urlParams.get('location') || 'Birmingham';
+
+    const locationSelect = document.getElementById('locationSelect');
+    const locationPrintText = document.getElementById('locationPrintText');
+    
+    // Initialize select options
+    let optionExists = Array.from(locationSelect.options).some(opt => opt.value === locationParam);
+    if (!optionExists && locationParam) {
+        const newOption = document.createElement('option');
+        newOption.value = locationParam;
+        newOption.textContent = locationParam;
+        locationSelect.appendChild(newOption);
+    }
+    locationSelect.value = locationParam;
+    locationPrintText.textContent = `Location: ${locationParam}`;
+
+    locationSelect.addEventListener('change', (e) => {
+        locationParam = e.target.value;
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('location', locationParam);
+        window.history.pushState({}, '', newUrl);
+        
+        locationPrintText.textContent = `Location: ${locationParam}`;
+        
+        // Reset and fetch new data
+        document.getElementById('patronsWrap').innerHTML = '';
+        document.getElementById('error').textContent = '';
+        document.getElementById('loading').style.display = 'block';
+        fetchData();
+    });
+
+    fetchData();
+
+    async function fetchData() {
+        try {
+            const response = await fetch(`/.netlify/functions/get-location-data?location=${encodeURIComponent(locationParam)}`);
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || 'Server error');
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            renderData(result.data);
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').textContent = "Failed to load data: " + err.message;
+        }
+    }
+
+    function renderData(rows) {
+        const patronsWrap = document.getElementById('patronsWrap');
+        
+        if (!rows || rows.length === 0) {
+            patronsWrap.innerHTML = '<p style="text-align: center;">No barcode data found for this location.</p>';
+            return;
+        }
+
+        // Group rows by patron (using patron_name and patron_code as the unique key)
+        const patronsMap = new Map();
+
+        rows.forEach(row => {
+            const key = `${row.patron_name || ''}_${row.patron_code || ''}`;
+            if (!patronsMap.has(key)) {
+                patronsMap.set(key, {
+                    name: row.patron_name,
+                    code: row.patron_code,
+                    patronBarcodes: [],
+                    items: []
+                });
+            }
+            
+            const patron = patronsMap.get(key);
+            
+            if (row.is_patron_barcode) {
+                patron.patronBarcodes.push({ value: row.barcode_value, format: row.barcode_type });
+            } else {
+                patron.items.push({ value: row.barcode_value, format: row.barcode_type });
+            }
+        });
+
+        // Render each patron
+        patronsMap.forEach((patron, key) => {
+            const section = document.createElement('section'); 
+            section.className = 'patron';
+            
+            const head = document.createElement('div'); 
+            head.className = 'patron-head';
+
+            const badge = document.createElement('span'); 
+            badge.className = 'badge'; 
+            badge.textContent = `${patron.name || 'Patron'} (${patron.code || 'No Code'})`;
+            head.appendChild(badge); 
+            section.appendChild(head);
+
+            // Render patron barcodes
+            patron.patronBarcodes.forEach((entry) => {
+                if (entry.value && /^\d+$/.test(entry.value.trim())) {
+                    const wrap = document.createElement('div'); wrap.className = 'barcode-item';
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    JsBarcode(svg, entry.value.trim(), { format: 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+                    wrap.appendChild(svg); section.appendChild(wrap);
+                }
+            });
+
+            // Render items
+            patron.items.forEach((entry) => {
+                const item = document.createElement('div'); item.className = 'barcode-item';
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                JsBarcode(svg, entry.value, { format: entry.format, lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+                item.appendChild(svg); section.appendChild(item);
+            });
+
+            patronsWrap.appendChild(section);
+        });
+    }
+  </script>
+</body>
+</html>
