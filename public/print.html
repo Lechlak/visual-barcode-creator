@@ -129,7 +129,7 @@
 
     <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
       <h1 style="margin:0;">
-        Database Print View - <span id="locationTitle"></span>
+        Barcodes for - <span id="locationTitle"></span>
       </h1>
 
       <button type="button" onclick="printPage()">
@@ -355,9 +355,11 @@
           patronsMap.set(key, {
             name: row.patron_name,
             code: row.patron_code,
+            created_at: row.created_at,
             patronBarcodes: [],
             items: []
           });
+
         }
 
         const patron =
@@ -398,7 +400,11 @@
         badge.className = 'badge';
 
         badge.textContent =
-          `${patron.name || 'Patron'} (${patron.code || 'No Code'})`;
+        `${patron.name || 'Patron'} (${patron.code || 'No Code'}) • Created: ${
+          patron.created_at
+            ? new Date(patron.created_at).toLocaleDateString()
+            : 'Unknown'
+        }`;
 
         head.appendChild(badge);
 
@@ -424,7 +430,7 @@
               );
 
             JsBarcode(svg, entry.value.trim(), {
-              format: 'CODE128',
+              format: 'CODE39',
               lineColor: '#000',
               width: 2,
               height: 80,
