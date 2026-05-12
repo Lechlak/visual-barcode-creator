@@ -167,12 +167,49 @@
         head.appendChild(badge); section.appendChild(head);
 
         // Render patron barcode if exists
+        /*
         if (currentPatron.code && /^\d+$/.test(currentPatron.code.trim())) {
           const wrap = document.createElement('div'); wrap.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           JsBarcode(svg, currentPatron.code.trim(), { format: 'CODE39', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
           wrap.appendChild(svg); section.appendChild(wrap);
         }
+        */
+
+        // Render patron barcode if exists
+if (currentPatron.code && currentPatron.code.trim()) {
+
+  const wrap = document.createElement('div');
+  wrap.className = 'barcode-item';
+
+  const svg = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'svg'
+  );
+
+  try {
+
+    JsBarcode(svg, currentPatron.code.trim(), {
+      format: 'CODE39',
+      lineColor: '#000',
+      width: 2,
+      height: 80,
+      margin: 12,
+      displayValue: true
+    });
+
+    wrap.appendChild(svg);
+    section.appendChild(wrap);
+
+  } catch (err) {
+
+    console.error(
+      'Failed to render patron barcode:',
+      currentPatron.code,
+      err
+    );
+  }
+}
 
         // Render items
         currentPatron.items.forEach((entry) => {
@@ -235,10 +272,12 @@
         if (!val) return;
         
         const format = barcodeFormatInput.value;
+        /*
         if (format === 'CODE128' && !/^\d+$/.test(val)) { 
             error.textContent = 'For CODE128, use numbers only.'; 
             return; 
         }
+        */
 
         currentPatron.items.push({ value: val, format: format });
         error.textContent = "";
