@@ -76,7 +76,7 @@
       <div id="activePatronSection" class="hidden">
         <div id="currentPatronSummary">
             <div>
-                <h3>Active Patron: <span id="displayPatronName"></span> <span id="displayPatronCode"></span></h3>
+                <h3>Patron: <span id="displayPatronName"></span> <span id="displayPatronCode"></span></h3>
             </div>
             <button id="editPatronBtn" type="button" class="secondary" style="padding: 5px 10px; font-size: 12px;">Edit</button>
         </div>
@@ -163,14 +163,14 @@
         const head = document.createElement('div'); head.className = 'patron-head';
 
         const badge = document.createElement('span'); badge.className = 'badge'; 
-        badge.textContent = `${currentPatron.name || 'Unknown'} (${currentPatron.code || 'No Code'})`;
+        badge.textContent = `${currentPatron.name || 'Patron'} (${currentPatron.code || 'No Code'})`;
         head.appendChild(badge); section.appendChild(head);
 
         // Render patron barcode if exists
         if (currentPatron.code && /^\d+$/.test(currentPatron.code.trim())) {
           const wrap = document.createElement('div'); wrap.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, currentPatron.code.trim(), { format: 'CODE128', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          JsBarcode(svg, currentPatron.code.trim(), { format: 'CODE39', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
           wrap.appendChild(svg); section.appendChild(wrap);
         }
 
