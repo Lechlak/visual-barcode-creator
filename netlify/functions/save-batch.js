@@ -105,14 +105,14 @@ exports.handler = async (event, context) => {
         try {
             // 4. Insert Patron if code exists
             if (patronCode) {
-                const pQuery = `INSERT INTO barcode_scans (location, patron_code, patron_name, barcode_type, barcode_value, is_patron_barcode) VALUES (?, ?, ?, 'CODE128', ?, true)`;
+                const pQuery = `INSERT INTO barcode_scans (location, patron_code, patron_name, barcode_type, barcode_value, is_patron_barcode) VALUES (?, ?, ?, 'CODE39', ?, true)`;
                 await connection.query(pQuery, [location, patronCode, patronName, patronCode]);
             }
 
             // 5. Insert items
             for (const item of items) {
                 const iQuery = `INSERT INTO barcode_scans (location, patron_code, patron_name, barcode_type, barcode_value, is_patron_barcode) VALUES (?, ?, ?, ?, ?, false)`;
-                await connection.query(iQuery, [location, patronCode, patronName, item.format || 'CODE128', item.value]);
+                await connection.query(iQuery, [location, patronCode, patronName, item.format || 'CODE39', item.value]);
             }
 
             // 6. Commit
