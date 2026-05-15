@@ -413,24 +413,22 @@
         // Patron barcodes
         patron.patronBarcodes.forEach((entry) => {
 
-          if (
-            entry.value &&
-            /^\d+$/.test(entry.value.trim())
-          ) {
+          if (!entry.value) return;
 
-            const wrap =
-              document.createElement('div');
+          const wrap =
+            document.createElement('div');
 
-            wrap.className = 'barcode-item';
+          wrap.className = 'barcode-item';
 
-            const svg =
-              document.createElementNS(
-                'http://www.w3.org/2000/svg',
-                'svg'
-              );
+          const svg =
+            document.createElementNS(
+              'http://www.w3.org/2000/svg',
+              'svg'
+            );
 
+          try {
             JsBarcode(svg, entry.value.trim(), {
-              format: 'CODE128',
+              format: entry.format || 'CODE39',
               lineColor: '#000',
               width: 2,
               height: 80,
@@ -439,8 +437,13 @@
             });
 
             wrap.appendChild(svg);
-
             section.appendChild(wrap);
+          } catch (err) {
+            console.error(
+              'Patron barcode render failed:',
+              entry,
+              err
+            );
           }
         });
 
