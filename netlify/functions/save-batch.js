@@ -105,7 +105,7 @@ exports.handler = async (event, context) => {
         try {
             // 4. Insert Patron if code exists
             if (patronCode) {
-                const pQuery = `INSERT INTO barcode_scans (location, patron_code, patron_name, barcode_type, barcode_value, is_patron_barcode) VALUES (?, ?, ?, 'CODE39', ?, true)`;
+                const pQuery = `INSERT INTO barcode_scans (location, patron_code, patron_name, barcode_type, barcode_value, is_patron_barcode) VALUES (?, ?, ?, 'CODE128', ?, true)`;
                 await connection.query(pQuery, [location, patronCode, patronName, patronCode]);
             }
 
