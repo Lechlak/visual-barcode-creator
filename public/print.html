@@ -430,7 +430,7 @@
               );
 
             JsBarcode(svg, entry.value.trim(), {
-              format: 'CODE39',
+              format: 'CODE128',
               lineColor: '#000',
               width: 2,
               height: 80,
@@ -463,7 +463,7 @@
           try {
 
             JsBarcode(svg, entry.value, {
-              format: entry.format || 'CODE128',
+              format: entry.format || 'CODE39',
               lineColor: '#000',
               width: 2,
               height: 80,
