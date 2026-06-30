@@ -30,6 +30,7 @@
 <body>
   <main class="card">
     <h1>Visual Barcode Creator (Offline Mode) - <span id="locationTitle"></span> 
+<button id="clearCacheBtn" type="button" style="float:right; background: #b00020; margin-left: 10px;">Clear Cache</button>
 <button id="printCachedBtn" type="button" style="float:right; background: #6366f1;">Print Cached</button></h1>
 
     <div class="no-print">
@@ -342,6 +343,23 @@ if (currentPatron.code && currentPatron.code.trim()) {
     if (printBtn) { printBtn.addEventListener('click', () => window.print()); }
 
     // Print Database
+    
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', () => {
+            const cachedData = JSON.parse(localStorage.getItem('offlineBarcodes')) || [];
+            if (cachedData.length === 0) {
+                alert("Cache is already empty.");
+                return;
+            }
+            const confirmMsg = "Are you sure you want to clear the cached barcodes?\n\nIMPORTANT: Please ensure you have printed your barcodes before clearing the cache, as this action cannot be undone.";
+            if (confirm(confirmMsg)) {
+                localStorage.removeItem('offlineBarcodes');
+                alert("Cache cleared successfully.");
+            }
+        });
+    }
+
     const printCachedBtn = document.getElementById('printCachedBtn');
     if (printCachedBtn) {
         printCachedBtn.addEventListener('click', () => {
