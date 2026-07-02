@@ -391,12 +391,16 @@ if (currentPatron.code && currentPatron.code.trim()) {
                 document.head.appendChild(style);
             }
 
-            printContainer.innerHTML = '<h2>Cached Barcodes for ' + locationParam + '</h2>';
+
+            const currentDateTime = new Date().toLocaleString();
+            printContainer.innerHTML = '<h2>Cached Barcodes for ' + locationParam + '</h2><p style="font-size: 0.9em; color: #555;">Printed on: ' + currentDateTime + '</p>';
 
             cachedData.forEach(patron => {
                 const sec = document.createElement("div");
                 sec.className = "print-patron";
-                sec.innerHTML = "<strong>" + (patron.patronName || "Patron") + " (" + (patron.patronCode || "No Code") + ")</strong><br><br>";
+
+                const scanTime = patron.timestamp ? new Date(patron.timestamp).toLocaleString() : 'Unknown';
+                sec.innerHTML = "<strong>" + (patron.patronName || "Patron") + " (" + (patron.patronCode || "No Code") + ")</strong> <span style='font-size: 0.8em; color: #666; font-weight: normal;'>(Scanned: " + scanTime + ")</span><br><br>";
 
                 if (patron.patronCode) {
                     const div = document.createElement("div");
