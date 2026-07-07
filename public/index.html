@@ -13,10 +13,10 @@
     button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; font-weight:600; background:#0066ff; color:#fff; }
     button.secondary { background:#5c657a; }
     .error { min-height: 1.2em; margin-top: 10px; color:#b00020; }
-    .patron { margin-top: 18px; padding-top: 16px; border-top: 2px solid #d8deee; }
+    .patron { margin-top: 10px; padding-top: 8px; border-top: 2px solid #d8deee; }
     .patron-head { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
     .badge { font-size:.85rem; color:#4a4a4a; background: #e0e5f0; padding: 4px 8px; border-radius: 4px; }
-    .barcode-item { text-align:center; margin-bottom:16px; page-break-inside: avoid; }
+    .barcode-item { text-align:center; margin-bottom: 8px; page-break-inside: avoid; }
     hr.patron-separator { border:none; border-top:2px dashed #aab4cc; margin:20px 0 0; }
     
     .hidden { display: none !important; }
@@ -34,7 +34,7 @@
 
     <div class="no-print">
     
-      <div style="margin-bottom: 15px; font-weight: bold; color: #0066ff; display: flex; align-items: center; gap: 10px;display: none;">
+      <div style="margin-bottom: 8px; font-weight: bold; color: #0066ff; display: flex; align-items: center; gap: 10px;display: none;">
         <label for="locationSelect">Current Location:</label>
         <select id="locationSelect" style="width: auto; padding: 5px; font-weight: bold; border: 1px solid #0066ff; color: #0066ff; border-radius: 5px;">
           <option value="Birmingham">Birmingham</option>
@@ -172,7 +172,7 @@
         if (currentPatron.code && /^\d+$/.test(currentPatron.code.trim())) {
           const wrap = document.createElement('div'); wrap.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, currentPatron.code.trim(), { format: 'CODE39', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          JsBarcode(svg, currentPatron.code.trim(), { format: 'CODE39', lineColor: '#000', width: 1.5, height: 50, margin: 10, displayValue: true });
           wrap.appendChild(svg); section.appendChild(wrap);
         }
         */
@@ -193,9 +193,7 @@ if (currentPatron.code && currentPatron.code.trim()) {
     JsBarcode(svg, currentPatron.code.trim(), {
       format: 'CODE39',
       lineColor: '#000',
-      width: 2,
-      height: 80,
-      margin: 12,
+      width: 1.5, height: 50, margin: 10,
       displayValue: true
     });
 
@@ -216,7 +214,7 @@ if (currentPatron.code && currentPatron.code.trim()) {
         currentPatron.items.forEach((entry) => {
           const item = document.createElement('div'); item.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, entry.value, { format: entry.format, lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          JsBarcode(svg, entry.value, { format: entry.format, lineColor: '#000', width: 1.5, height: 50, margin: 10, displayValue: true });
           item.appendChild(svg); section.appendChild(item);
         });
 
