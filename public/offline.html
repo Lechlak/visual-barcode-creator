@@ -13,10 +13,10 @@
     button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; font-weight:600; background:#0066ff; color:#fff; }
     button.secondary { background:#5c657a; }
     .error { min-height: 1.2em; margin-top: 10px; color:#b00020; }
-    .patron { margin-top: 18px; padding-top: 16px; border-top: 2px solid #d8deee; }
+    .patron { margin-top: 10px; padding-top: 8px; border-top: 2px solid #d8deee; }
     .patron-head { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
     .badge { font-size:.85rem; color:#4a4a4a; background: #e0e5f0; padding: 4px 8px; border-radius: 4px; }
-    .barcode-item { text-align:center; margin-bottom:16px; page-break-inside: avoid; }
+    .barcode-item { text-align:center; margin-bottom: 8px; page-break-inside: avoid; }
     hr.patron-separator { border:none; border-top:2px dashed #aab4cc; margin:20px 0 0; }
     
     .hidden { display: none !important; }
@@ -24,18 +24,29 @@
     #currentPatronSummary h3 { margin: 0; color: #3730a3; font-size: 16px; }
     #currentPatronSummary span { color: #4f46e5; font-weight: normal; margin-left: 10px; }
 
+
     @media print { .no-print { display:none !important; } .card { box-shadow:none; } }
+    
+    @media print {
+        body.printing-cache > *:not(#offlinePrintContainer) { display: none !important; }
+        body.printing-cache #offlinePrintContainer { display: block !important; }
+        .print-patron { margin-bottom: 10px; page-break-inside: avoid; border-top: 2px dashed #ccc; padding-top: 5px; }
+        .print-barcode-item { text-align: center; margin-bottom: 8px; }
+    }
+    @media screen {
+        #offlinePrintContainer { display: none !important; }
+    }
   </style>
 </head>
 <body>
   <main class="card">
     <h1>Visual Barcode Creator (Offline Mode) - <span id="locationTitle"></span> 
-<button id="clearCacheBtn" type="button" style="position: absolute; top: 2em; right: 2em; padding:2em; background: #b00020; margin-left: 10px;">Clear Cache</button>
-<button id="printCachedBtn" type="button" style="float:right; background: #6366f1;">Print All</button></h1>
+<button id="clearCacheBtn" type="button" style="float:right; background: #b00020; margin-left: 10px;">Clear Cache</button>
+<button id="printCachedBtn" type="button" style="float:right; background: #6366f1;">Print Cached</button></h1>
 
     <div class="no-print">
     
-      <div style="margin-bottom: 15px; font-weight: bold; color: #0066ff; display: flex; align-items: center; gap: 10px;display: none;">
+      <div style="margin-bottom: 8px; font-weight: bold; color: #0066ff; display: flex; align-items: center; gap: 10px;display: none;">
         <label for="locationSelect">Current Location:</label>
         <select id="locationSelect" style="width: auto; padding: 5px; font-weight: bold; border: 1px solid #0066ff; color: #0066ff; border-radius: 5px;">
           <option value="Birmingham">Birmingham</option>
@@ -96,9 +107,7 @@
         </div>
       </div>
 
-      <!--
       <div class="controls" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;"><button id="printBtn" type="button" class="secondary">Print Current View</button></div>
-        -->
       <div id="error" class="error" role="alert" aria-live="polite"></div>
     </div>
 
@@ -178,7 +187,7 @@
         if (currentPatron.code && /^\d+$/.test(currentPatron.code.trim())) {
           const wrap = document.createElement('div'); wrap.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, currentPatron.code.trim(), { format: 'CODE39', lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          JsBarcode(svg, currentPatron.code.trim(), { format: 'CODE39', lineColor: '#000', width: 1.5, height: 50, margin: 10, displayValue: true });
           wrap.appendChild(svg); section.appendChild(wrap);
         }
         */
@@ -199,9 +208,7 @@ if (currentPatron.code && currentPatron.code.trim()) {
     JsBarcode(svg, currentPatron.code.trim(), {
       format: 'CODE39',
       lineColor: '#000',
-      width: 2,
-      height: 80,
-      margin: 12,
+      width: 1.5, height: 50, margin: 10,
       displayValue: true
     });
 
@@ -222,7 +229,7 @@ if (currentPatron.code && currentPatron.code.trim()) {
         currentPatron.items.forEach((entry) => {
           const item = document.createElement('div'); item.className = 'barcode-item';
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(svg, entry.value, { format: entry.format, lineColor: '#000', width: 2, height: 80, margin: 12, displayValue: true });
+          JsBarcode(svg, entry.value, { format: entry.format, lineColor: '#000', width: 1.5, height: 50, margin: 10, displayValue: true });
           item.appendChild(svg); section.appendChild(item);
         });
 
@@ -378,34 +385,26 @@ if (currentPatron.code && currentPatron.code.trim()) {
                 printContainer.className = 'print-only';
                 document.body.appendChild(printContainer);
                 
-                const style = document.createElement('style');
-                style.textContent = `
-                    @media print {
-                        body > *:not(#offlinePrintContainer) { display: none !important; }
-                        #offlinePrintContainer { display: block !important; }
-                        .print-patron { margin-bottom: 20px; page-break-inside: avoid; border-top: 2px dashed #ccc; padding-top: 10px; }
-                        .print-barcode-item { text-align: center; margin-bottom: 15px; }
-                    }
-                    @media screen {
-                        #offlinePrintContainer { display: none !important; }
-                    }
-                `;
-                document.head.appendChild(style);
+                document.body.classList.add('printing-cache');
             }
             
-            printContainer.innerHTML = '<h2>Cached Barcodes for ' + locationParam + '</h2>';
+            
+            const currentDateTime = new Date().toLocaleString();
+            printContainer.innerHTML = '<h2>Cached Barcodes for ' + locationParam + '</h2><p style="font-size: 0.9em; color: #555;">Printed on: ' + currentDateTime + '</p>';
             
             cachedData.forEach(patron => {
                 const sec = document.createElement("div");
                 sec.className = "print-patron";
-                sec.innerHTML = "<strong>" + (patron.patronName || "Patron") + " (" + (patron.patronCode || "No Code") + ")</strong><br><br>";
+                
+                const scanTime = patron.timestamp ? new Date(patron.timestamp).toLocaleString() : 'Unknown';
+                sec.innerHTML = "<strong>" + (patron.patronName || "Patron") + " (" + (patron.patronCode || "No Code") + ")</strong> <span style='font-size: 0.8em; color: #666; font-weight: normal;'>(Scanned: " + scanTime + ")</span><br><br>";
                 
                 if (patron.patronCode) {
                     const div = document.createElement("div");
                     div.className = "print-barcode-item";
                     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                     try {
-                        JsBarcode(svg, patron.patronCode, { format: "CODE39", displayValue: true, width: 2, height: 80, margin: 12 });
+                        JsBarcode(svg, patron.patronCode, { format: "CODE39", displayValue: true, width: 1.5, height: 50, margin: 10 });
                     } catch (e) { console.error("Barcode err:", e); }
                     div.appendChild(svg);
                     sec.appendChild(div);
@@ -417,7 +416,7 @@ if (currentPatron.code && currentPatron.code.trim()) {
                         div.className = "print-barcode-item";
                         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                         try {
-                            JsBarcode(svg, item.value, { format: item.format || "CODE39", displayValue: true, width: 2, height: 80, margin: 12 });
+                            JsBarcode(svg, item.value, { format: item.format || "CODE39", displayValue: true, width: 1.5, height: 50, margin: 10 });
                         } catch (e) { console.error("Barcode err:", e); }
                         div.appendChild(svg);
                         sec.appendChild(div);
@@ -428,6 +427,8 @@ if (currentPatron.code && currentPatron.code.trim()) {
             
             setTimeout(() => {
                 window.print();
+                // Clean up the class after printing dialogue closes
+                setTimeout(() => { document.body.classList.remove('printing-cache'); }, 100);
             }, 500);
         });
     }

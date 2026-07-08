@@ -33,9 +33,7 @@
       color: #fff;
     }
 
-    .patron {
-      margin-top: 18px;
-      padding-top: 16px;
+    .patron { margin-top: 10px; padding-top: 8px;
       border-top: 2px solid #d8deee;
       page-break-inside: avoid;
     }
@@ -59,7 +57,7 @@
 
     .barcode-item {
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
       page-break-inside: avoid;
     }
 
@@ -137,7 +135,7 @@
       </button>
     </div>
 
-    <div style="margin-bottom:15px; font-weight:bold; color:#0066ff; font-size:1.2em;">
+    <div style="margin-bottom: 8px; font-weight:bold; color:#0066ff; font-size:1.2em;">
 
       <div class="no-print" style="display:none;">
         <label for="locationSelect">Location:</label>
@@ -430,9 +428,7 @@
             JsBarcode(svg, entry.value.trim(), {
               format: entry.format || 'CODE39',
               lineColor: '#000',
-              width: 2,
-              height: 80,
-              margin: 12,
+              width: 1.5, height: 50, margin: 10,
               displayValue: true
             });
 
@@ -468,9 +464,7 @@
             JsBarcode(svg, entry.value, {
               format: entry.format || 'CODE39',
               lineColor: '#000',
-              width: 2,
-              height: 80,
-              margin: 12,
+              width: 1.5, height: 50, margin: 10,
               displayValue: true
             });
 
